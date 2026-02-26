@@ -13,8 +13,9 @@ import Svg, { Path } from "react-native-svg";
 import HomeScreen from "../screens/HomeScreen";
 import MyFieldsScreen from "../screens/MyFieldScreen";
 import ProfileScreen from "../screens/ProfileScreen";
-import MyProfile from "../../assets/my-field.svg";
+import MyProfile from "../../assets/Field-Map 1.svg";
 import HomeIcon from "../../assets/home.svg";
+import ProfileIcon from "../../assets/profile.svg";
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get("window");
 
@@ -91,12 +92,19 @@ const BottomTabNavigator = () => {
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarIconStyle: styles.tabBarIcon,
         tabBarBackground: () => <TabBarBackground />,
+        tabBarIconStyle: {
+          marginBottom: 4,
+        },
       }}
     >
       <Tab.Screen
-        name="My Fields"
+        name="Fields Map"
         component={MyFieldsScreen}
         options={{
+          tabBarItemStyle: {
+            paddingLeft: 35,
+          },
+
           tabBarIcon: ({ focused }) => <MyProfile width={24} height={24} />,
         }}
       />
@@ -122,15 +130,20 @@ const BottomTabNavigator = () => {
         name="Profile"
         component={ProfileScreen}
         options={{
+          tabBarItemStyle: {
+            paddingRight: 35,
+            marginBottom: 6,
+          },
           tabBarIcon: ({ focused }) => (
-            <Image
-              source={require("../../assets/profile.png")}
-              style={[
-                styles.icon,
-                { tintColor: focused ? "#39B54B" : "#383838" },
-              ]}
-              resizeMode="contain"
-            />
+            // <Image
+            //   source={require("../../assets/profile.png")}
+            //   style={[
+            //     styles.icon,
+            //     { tintColor: focused ? "#39B54B" : "#383838" },
+            //   ]}
+            //   resizeMode="contain"
+            // />
+            <ProfileIcon width={28} height={28} />
           ),
         }}
       />

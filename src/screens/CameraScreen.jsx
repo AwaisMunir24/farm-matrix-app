@@ -154,7 +154,7 @@ const CameraScreen = ({ navigation }) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#39B54B" />
         <Text style={styles.loadingText}>Analyzing plant…</Text>
-        <Text style={styles.subText}>This may a few seconds</Text>
+        <Text style={styles.subText}>This may takes a few seconds</Text>
       </View>
     );
   }
@@ -271,7 +271,6 @@ export default CameraScreen;
 
 // ─── Styles ──────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // Shared
   fullScreen: { flex: 1, backgroundColor: "#000" },
   center: {
     flex: 1,
@@ -279,7 +278,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 16,
-    padding: 24,
+    padding: 20,
   },
   loadingText: { fontSize: 18, fontWeight: "600", color: "#383838" },
   subText: { fontSize: 13, color: "#888" },
@@ -368,8 +367,8 @@ const styles = StyleSheet.create({
   chooseContainer: {
     flex: 1,
     backgroundColor: "#F9F9F9",
-    paddingTop: 56,
-    paddingHorizontal: 24,
+    paddingTop: 45,
+    paddingHorizontal: 20,
   },
   chooseHeader: {
     flexDirection: "row",
