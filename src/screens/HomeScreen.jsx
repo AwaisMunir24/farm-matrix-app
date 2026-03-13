@@ -123,7 +123,10 @@ const HomeScreen = ({ navigation }) => {
 
           {/* Top Cards */}
           <View style={styles.topCardsContainer}>
-            <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate("AddFarmer")}
+            >
               <View style={styles.innerCard}>
                 <FarmerImage width={35} height={35} />
               </View>
@@ -131,8 +134,11 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity style={styles.addButton}>
                 <PluseIcon width={18} height={18} />
               </TouchableOpacity>
-            </View>
-            <View style={styles.card}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate("AddNewField")}
+            >
               <View style={styles.innerCard}>
                 <FieldsIcon width={35} height={35} />
               </View>
@@ -140,13 +146,18 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity style={styles.addButton}>
                 <PluseIcon width={18} height={18} />
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Quick Access */}
           <View style={styles.quickAccessContainer}>
-            <TouchableOpacity style={styles.quickAccessButton}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              style={styles.quickAccessButton}
+              onPress={() => navigation.navigate("FarmerListing")}
+            >
+              <TouchableOpacity
+                style={{ flexDirection: "row", alignItems: "center" }}
+              >
                 <UsersIcon width={18} height={18} />
                 <Text
                   style={{
@@ -158,7 +169,7 @@ const HomeScreen = ({ navigation }) => {
                 >
                   My Farmer
                 </Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.arrowCircle}>
                 <Uparrow width={18} height={18} />
               </View>
@@ -222,7 +233,7 @@ const HomeScreen = ({ navigation }) => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cropScanHeading}>Crop Scan</Text>
                 <Text style={styles.cropContent}>
-                  Satellite based smart crop monitoring
+                  Satellite based smart crop mapping
                 </Text>
                 <TouchableOpacity onPress={_handleCropScan}>
                   <LinearGradient

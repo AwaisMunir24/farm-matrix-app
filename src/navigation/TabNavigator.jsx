@@ -4,6 +4,11 @@ import BottomTabNavigator from "./BottomNavigator";
 import CameraScreen from "../screens/CameraScreen";
 import ResultScreen from "../screens/ResultScreen";
 import CropScan from "../screens/CropScan";
+import AddNewFarmer from "../screens/AddNewFarmer";
+import AddNewField from "../screens/AddNewField";
+import DrawPolygonFields from "../screens/Draw-polygon-fields";
+import FarmerListing from "../screens/FarmerListing";
+import FieldsListing from "../screens/FieldsListing";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -13,6 +18,10 @@ const TabNavigator = () => {
       <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />
       <Stack.Screen name="Cropscan" component={CropScan} />
+      <Stack.Screen name="AddFarmer" component={AddNewFarmer} />
+      <Stack.Screen name="AddNewField" component={AddNewField} />
+      <Stack.Screen name="FarmerListing" component={FarmerListing} />
+      <Stack.Screen name="FieldsListing" component={FieldsListing} />
     </Stack.Navigator>
   );
 };

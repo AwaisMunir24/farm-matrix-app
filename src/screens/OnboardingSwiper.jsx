@@ -10,7 +10,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import Swiper from "react-native-swiper";
 import { LinearGradient } from "expo-linear-gradient";
-
+import Logo from "../../assets/Logo.svg";
+import SwiperContent from "../../assets/forthswiperscreen.svg";
 const OnboardingSwiper = ({ onComplete }) => {
   const swiperRef = useRef(null);
 
@@ -35,11 +36,10 @@ const OnboardingSwiper = ({ onComplete }) => {
       >
         {/* Slide 1 */}
         <View style={styles.slide}>
-          <Image
-            style={styles.logo}
-            source={require("../../assets/logo.png")}
-            resizeMode="contain"
-          />
+          <View style={styles.logo}>
+            <Logo width={180} height={38} />
+          </View>
+          {/* <Logo width={180} height={38} /> */}
           <Text style={styles.title}>Satellite based</Text>
           <Text style={styles.subtitle}>reporting of your field</Text>
           <ImageBackground
@@ -81,24 +81,17 @@ const OnboardingSwiper = ({ onComplete }) => {
 
         {/* Slide 2 */}
         <View style={styles.slide2}>
-          <Image
-            style={styles.logo}
-            source={require("../../assets/logo.png")}
-            resizeMode="contain"
-          />
+          <View style={styles.logo}>
+            <Logo width={180} height={38} />
+          </View>
+
           <Text style={styles.title}>Leaf Scan AI</Text>
           <Text style={styles.subtitle}>plant disease analysis</Text>
           <Image
-            source={require("../../assets/demotwo.png")}
-            resizeMode="cover"
+            source={require("../../assets/secondswiper.png")}
+            resizeMode="contain"
             style={styles.bottomImage2}
           />
-
-          {/* <Image
-            source={require("../../assets/swiperfirst.png")}
-            style={styles.illustration}
-            resizeMode="cover"
-          /> */}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -127,29 +120,81 @@ const OnboardingSwiper = ({ onComplete }) => {
 
         {/* Slide 3 */}
         <View style={styles.slide3}>
-          <Image
-            style={styles.logo}
-            source={require("../../assets/logo.png")}
-            resizeMode="contain"
-          />
+          <View style={styles.logo}>
+            <Logo width={180} height={38} />
+          </View>
+
           <Text style={styles.title}>Field Weather</Text>
           <Text style={styles.subtitle}>detailed predictions</Text>
           <ImageBackground
             source={require("../../assets/third_demo.png")}
             resizeMode="contain"
             style={styles.bottomImage3}
-          >
-            {/* <View>
-              <View>
-                <Image
-                  source={require("../../assets/wind.png")}
-                  style={styles.slideThreeIcons}
-                />
-                <Text>Wind Speed</Text>
-              </View>
-            </View> */}
-          </ImageBackground>
+          ></ImageBackground>
 
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={handleSkip}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.nextButton}
+              onPress={handleNext}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={["#5FD66E", "#34B349"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.gradientButton}
+              >
+                <Text style={styles.nextText}>Next</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+        {/* slide 4 */}
+        <View style={styles.slide3}>
+          <View style={styles.logo}>
+            <Logo width={180} height={38} />
+          </View>
+
+          <Text style={styles.title}>AI Powered</Text>
+          <Text style={styles.subtitle}>digital agriculture support</Text>
+          {/* <ImageBackground
+            source={require("../../assets/forthswiper.png")}
+            resizeMode="contain"
+            style={styles.bottomImage3}
+          ></ImageBackground> */}
+          <Image
+            source={require("../../assets/forthswiper.png")}
+            style={{ objectFit: "cover" }}
+          />
+          <View>
+            <Text
+              style={{
+                color: "#383838",
+                fontSize: 16,
+                fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              Farming AI Assistant{" "}
+            </Text>
+            <Text
+              style={{
+                color: "#383838",
+                fontSize: 16,
+                fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              is ready to chat and guide you
+            </Text>
+          </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.skipButton}

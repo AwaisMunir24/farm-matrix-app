@@ -16,7 +16,7 @@ import axios from "axios";
 
 const SERVER_URL = "https://farm-matrix-backend.vercel.app";
 const STATIC_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxNTAyMDMxLCJleHAiOjE3NzIzNjYwMzF9.u0_kiWVsBe1dz5yQNzTvSom2lmVYClWloyF8Ob0Rxm8";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcyNDUwMjI3LCJleHAiOjE3NzMzMTQyMjd9.g_v0gXSVR8UBLeOK4xLFK7-AlQxk8XakDgZdBseHPU4";
 
 // ─── Screens / Modes ───────────────────────────────────────────────
 // "choose"  → show two buttons (gallery | camera)

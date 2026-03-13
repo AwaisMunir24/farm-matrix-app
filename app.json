@@ -6,22 +6,35 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-screen.png",
+      "image": "./assets/adaptive-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.awaisnabeel.farmmatrixapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE"
+      }
     },
     "android": {
+      "package": "com.awaisnabeel.farmmatrixapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.awaisnabeel.farmmatrixapp"
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCHVCBqxGTXx7GNL3PLjq-OVWRSUWVLKZw"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -30,6 +43,7 @@
       "eas": {
         "projectId": "4d4e60a4-e986-4a43-b205-aec2c0729430"
       }
-    }
+    },
+    "plugins": ["@react-native-community/datetimepicker"]
   }
 }

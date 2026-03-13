@@ -1,0 +1,499 @@
+{
+  "provinces": [
+    {
+      "name": "Balochistan",
+      "tehsils": [
+        {
+          "name": "Awaran Tehsil",
+          "district": "Awaran",
+          "division": "Kalat"
+        },
+        {
+          "name": "Gishkaur Tehsil",
+          "district": "Awaran",
+          "division": "Kalat"
+        },
+        {
+          "name": "Jhal Jhao Tehsil",
+          "district": "Awaran",
+          "division": "Kalat"
+        },
+        {
+          "name": "Mashkai Tehsil",
+          "district": "Awaran",
+          "division": "Kalat"
+        },
+        {
+          "name": "Barkhan Tehsil",
+          "district": "Barkhan",
+          "division": "Zhob"
+        },
+        {
+          "name": "Kohlu Tehsil",
+          "district": "Kohlu",
+          "division": "Sibi"
+        },
+        {
+          "name": "Mawand Tehsil",
+          "district": "Kohlu",
+          "division": "Sibi"
+        },
+        {
+          "name": "Quetta City Tehsil",
+          "district": "Quetta",
+          "division": "Quetta"
+        },
+        {
+          "name": "Panjgur Tehsil",
+          "district": "Panjgur",
+          "division": "Makran"
+        }
+      ]
+    },
+    {
+      "name": "Khyber Pakhtunkhwa",
+      "tehsils": [
+        {
+          "name": "Baka Khel Tehsil",
+          "district": "Bannu District",
+          "division": "Bannu Division"
+        },
+        {
+          "name": "Bannu Tehsil",
+          "district": "Bannu District",
+          "division": "Bannu Division"
+        },
+        {
+          "name": "Domel Tehsil",
+          "district": "Bannu District",
+          "division": "Bannu Division"
+        },
+        {
+          "name": "Ghoriwala Tehsil",
+          "district": "Bannu District",
+          "division": "Bannu Division"
+        },
+        {
+          "name": "Kakki Tehsil",
+          "district": "Bannu District",
+          "division": "Bannu Division"
+        },
+        {
+          "name": "Batkhela Tehsil",
+          "district": "Malakand District",
+          "division": "Malakand Division"
+        },
+        {
+          "name": "Sam Ranizai Tehsil",
+          "district": "Malakand District",
+          "division": "Malakand Division"
+        },
+        {
+          "name": "Thana Tehsil",
+          "district": "Malakand District",
+          "division": "Malakand Division"
+        },
+        {
+          "name": "Peshawar City Tehsil",
+          "district": "Peshawar District",
+          "division": "Peshawar Division"
+        },
+        {
+          "name": "Mathra Tehsil",
+          "district": "Peshawar District",
+          "division": "Peshawar Division"
+        }
+      ]
+    },
+    {
+      "name": "Punjab",
+      "tehsils": [
+        {
+          "name": "Bahawalnagar Tehsil",
+          "district": "Bahawalnagar District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Chishtian Tehsil",
+          "district": "Bahawalnagar District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Fortabbas Tehsil",
+          "district": "Bahawalnagar District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Haroonabad Tehsil",
+          "district": "Bahawalnagar District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Minchinabad Tehsil",
+          "district": "Bahawalnagar District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Ahmadpur East Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Bahawalpur City Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Bahawalpur Saddar Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Hasilpur Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Khairpur Tamewali Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Yazman Tehsil",
+          "district": "Bahawalpur District",
+          "division": "Bahawalpur Division"
+        },
+        {
+          "name": "Faisalabad City Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Faisalabad Saddar Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Jaranwala Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Chak Jhumra Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Samundri Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Tandlianwala Tehsil",
+          "district": "Faisalabad District",
+          "division": "Faisalabad Division"
+        },
+        {
+          "name": "Lahore Cantonment Tehsil",
+          "district": "Lahore District",
+          "division": "Lahore Division"
+        },
+        {
+          "name": "Lahore City Tehsil",
+          "district": "Lahore District",
+          "division": "Lahore Division"
+        },
+        {
+          "name": "Model Town Tehsil",
+          "district": "Lahore District",
+          "division": "Lahore Division"
+        },
+        {
+          "name": "Raiwind Tehsil",
+          "district": "Lahore District",
+          "division": "Lahore Division"
+        },
+        {
+          "name": "Shalimar Tehsil",
+          "district": "Lahore District",
+          "division": "Lahore Division"
+        },
+        {
+          "name": "Multan City Tehsil",
+          "district": "Multan District",
+          "division": "Multan Division"
+        },
+        {
+          "name": "Multan Saddar Tehsil",
+          "district": "Multan District",
+          "division": "Multan Division"
+        },
+        {
+          "name": "Shujabad Tehsil",
+          "district": "Multan District",
+          "division": "Multan Division"
+        },
+        {
+          "name": "Jalalpur Pirwala Tehsil",
+          "district": "Multan District",
+          "division": "Multan Division"
+        },
+        {
+          "name": "Rawalpindi Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Murree Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Gujar Khan Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Taxila Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Kahuta Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Kallar Syedan Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        },
+        {
+          "name": "Kotli Sattian Tehsil",
+          "district": "Rawalpindi District",
+          "division": "Rawalpindi Division"
+        }
+      ]
+    },
+    {
+      "name": "Sindh",
+      "tehsils": [
+        {
+          "name": "Badin Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Khoski Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Matli Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Shaheed Fazal Rahu Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Tando Bago Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Talhar Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Tando Ghulam Hyder Tehsil",
+          "district": "Badin District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Hyderabad City Tehsil",
+          "district": "Hyderabad District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Hyderabad Tehsil",
+          "district": "Hyderabad District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Latifabad Tehsil",
+          "district": "Hyderabad District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Qasimabad Tehsil",
+          "district": "Hyderabad District",
+          "division": "Hyderabad Division"
+        },
+        {
+          "name": "Karachi East",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Karachi West",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Karachi South",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Karachi Central",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Korangi",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Malir",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Keamari",
+          "district": "Karachi",
+          "division": "Karachi Division"
+        },
+        {
+          "name": "Larkana Tehsil",
+          "district": "Larkana District",
+          "division": "Larkana Division"
+        },
+        {
+          "name": "Ratodero Tehsil",
+          "district": "Larkana District",
+          "division": "Larkana Division"
+        },
+        {
+          "name": "Bakrani Tehsil",
+          "district": "Larkana District",
+          "division": "Larkana Division"
+        },
+        {
+          "name": "Dokri Tehsil",
+          "district": "Larkana District",
+          "division": "Larkana Division"
+        },
+        {
+          "name": "Sukkur Tehsil",
+          "district": "Sukkur District",
+          "division": "Sukkur Division"
+        },
+        {
+          "name": "Rohri Tehsil",
+          "district": "Sukkur District",
+          "division": "Sukkur Division"
+        },
+        {
+          "name": "New Sukkur Tehsil",
+          "district": "Sukkur District",
+          "division": "Sukkur Division"
+        },
+        {
+          "name": "Salehpat Tehsil",
+          "district": "Sukkur District",
+          "division": "Sukkur Division"
+        }
+      ]
+    },
+    {
+      "name": "Azad Kashmir",
+      "tehsils": [
+        {
+          "name": "Bagh Tehsil",
+          "district": "Bagh District",
+          "division": "Poonch Division"
+        },
+        {
+          "name": "Dhirkot Tehsil",
+          "district": "Bagh District",
+          "division": "Poonch Division"
+        },
+        {
+          "name": "Haveli Tehsil",
+          "district": "Bagh District",
+          "division": "Poonch Division"
+        },
+        {
+          "name": "Muzaffarabad Tehsil",
+          "district": "Muzaffarabad District",
+          "division": "Muzaffarabad Division"
+        },
+        {
+          "name": "Naseerabad Tehsil",
+          "district": "Muzaffarabad District",
+          "division": "Muzaffarabad Division"
+        },
+        {
+          "name": "Rawalakot Tehsil",
+          "district": "Poonch District",
+          "division": "Poonch Division"
+        },
+        {
+          "name": "Hajira Tehsil",
+          "district": "Poonch District",
+          "division": "Poonch Division"
+        }
+      ]
+    },
+    {
+      "name": "Gilgit-Baltistan",
+      "tehsils": [
+        {
+          "name": "Gilgit Tehsil",
+          "district": "Gilgit District",
+          "division": "Gilgit Division"
+        },
+        {
+          "name": "Juglot Tehsil",
+          "district": "Gilgit District",
+          "division": "Gilgit Division"
+        },
+        {
+          "name": "Danyor Tehsil",
+          "district": "Gilgit District",
+          "division": "Gilgit Division"
+        },
+        {
+          "name": "Skardu Tehsil",
+          "district": "Skardu District",
+          "division": "Baltistan Division"
+        },
+        {
+          "name": "Gultari Tehsil",
+          "district": "Skardu District",
+          "division": "Baltistan Division"
+        },
+        {
+          "name": "Roundu Tehsil",
+          "district": "Skardu District",
+          "division": "Baltistan Division"
+        },
+        {
+          "name": "Shigar Tehsil",
+          "district": "Shigar District",
+          "division": "Baltistan Division"
+        },
+        {
+          "name": "Gulabpur Tehsil",
+          "district": "Shigar District",
+          "division": "Baltistan Division"
+        }
+      ]
+    }
+  ]
+}
