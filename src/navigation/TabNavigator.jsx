@@ -22,6 +22,7 @@ const TabNavigator = () => {
       <Stack.Screen name="AddNewField" component={AddNewField} />
       <Stack.Screen name="FarmerListing" component={FarmerListing} />
       <Stack.Screen name="FieldsListing" component={FieldsListing} />
+      <Stack.Screen name="DrawPolygonFields" component={DrawPolygonFields} />
     </Stack.Navigator>
   );
 };
