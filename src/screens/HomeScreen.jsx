@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,11 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from "react-native";
+import { ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import MenuBar from "../../assets/bars.svg";
 import Logo from "../../assets/Logo.svg";
 import BellIcon from "../../assets/bellicon.svg";
@@ -30,9 +31,119 @@ import WeatherIcon from "../../assets/weather-icon.svg";
 import Mic from "../../assets/mic.svg";
 import Share from "../../assets/share.svg";
 import ShareBg from "../../assets/share-bg.svg";
+import axios from "axios";
+import { SERVER_URL } from "../utils/index";
+import { STATIC_TOKEN } from "../utils/auth";
+
 const HomeScreen = ({ navigation }) => {
   const scrollViewRef = useRef(null);
   const inputRef = useRef(null);
+  const [loadingWeather, setLoadingWeather] = useState(true);
+  const [weatherData, setWeatherData] = useState({
+    temperature: "--",
+    condition: "Loading...",
+    feelsLike: "--",
+    high: "--",
+    low: "--",
+    day: "------",
+    time: "--:-- --",
+    date: "--",
+  });
+  const token =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0MzcxMTExLCJleHAiOjE3NzUyMzUxMTF9.qAYbeTTv_qVlsDilJNs_aSw_6K9Tg_Tsk44FqqaUKHs";
+  const fetchWeather = (lat, lon) => {
+    setLoadingWeather(true);
+
+    axios
+      .get(
+        `${SERVER_URL}/api/weather/detail?lat=${lat}&lon=${lon}&units=metric`,
+        {
+          headers: {
+            "x-auth-token": token,
+            "Content-Type": "application/json",
+          },
+        },
+      )
+      .then(function (response) {
+        const today = response?.data?.data?.[0];
+
+        if (!today) {
+          console.warn("No weather data found");
+          setLoadingWeather(false);
+          return;
+        }
+
+        const avg = parseFloat(today.temperature?.avg || 0);
+        const min = parseFloat(today.temperature?.min || 0);
+        const max = parseFloat(today.temperature?.max || 0);
+
+        const dayName = new Date(today.date)
+          .toLocaleDateString("en-US", { weekday: "long" })
+          .toUpperCase();
+
+        const now = new Date();
+
+        const timeStr = now.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+        const dateStr = now.toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "long",
+          year: "2-digit",
+        });
+
+        setWeatherData({
+          temperature: Math.round(avg).toString(),
+
+          // ✅ Accurate values from API
+          feelsLike: Math.round(avg).toString(), // API doesn't provide separate feels_like
+          high: Math.round(max).toString(),
+          low: Math.round(min).toString(),
+
+          condition: today.description || "Clear",
+          day: dayName,
+          time: timeStr,
+          date: dateStr,
+        });
+        setTimeout(() => {
+          setLoadingWeather(false);
+        }, 800);
+      })
+      .catch(function (error) {
+        console.error(
+          "Weather error:",
+          error.response?.status,
+          error.response?.data,
+        );
+        setTimeout(() => {
+          setLoadingWeather(false);
+        }, 800);
+      });
+  };
+
+  useEffect(() => {
+    Location.requestForegroundPermissionsAsync().then(function (permResult) {
+      if (permResult.status !== "granted") {
+        console.warn("Location denied — using default coords");
+        fetchWeather(31.4504, 73.135);
+        return;
+      }
+
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      })
+        .then(function (location) {
+          fetchWeather(location.coords.latitude, location.coords.longitude);
+        })
+        .catch(function (err) {
+          console.error("Location error:", err);
+          fetchWeather(31.4504, 73.135);
+        });
+    });
+  }, []);
 
   const handleInputFocus = () => {
     setTimeout(() => {
@@ -45,9 +156,11 @@ const HomeScreen = ({ navigation }) => {
       );
     }, 300);
   };
+
   const _handleCropScan = () => {
     navigation.navigate("Cropscan");
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
@@ -76,7 +189,7 @@ const HomeScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Weather */}
+          {/* Weather Section */}
           <View
             style={{
               marginTop: 30,
@@ -87,38 +200,73 @@ const HomeScreen = ({ navigation }) => {
               alignItems: "flex-end",
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <WeatherIcon width={79} height={79} />
-              <View style={{ marginLeft: 8 }}>
-                <Text
-                  style={{ fontSize: 32, fontWeight: "500", color: "#4E4E4E" }}
-                >
-                  22°C
-                </Text>
-                <Text
-                  style={{ fontSize: 12, fontWeight: "700", color: "#4E4E4E" }}
-                >
-                  MONDAY
-                </Text>
-                <Text
-                  style={{ fontSize: 10, fontWeight: "500", color: "#4E4E4E" }}
-                >
-                  4:36 PM | 25 June, 25
-                </Text>
+            {loadingWeather ? (
+              <View
+                style={{
+                  flex: 1,
+                  height: 79,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <ActivityIndicator size="large" color="#34B349" />
               </View>
-            </View>
-            <View>
-              <Text
-                style={{ fontSize: 12, fontWeight: "500", color: "#4E4E4E" }}
-              >
-                Feels like 17°
-              </Text>
-              <Text
-                style={{ fontSize: 12, fontWeight: "500", color: "#4E4E4E" }}
-              >
-                High 27 | Low-10
-              </Text>
-            </View>
+            ) : (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <WeatherIcon width={79} height={79} />
+                  <View style={{ marginLeft: 8 }}>
+                    <Text
+                      style={{
+                        fontSize: 32,
+                        fontWeight: "500",
+                        color: "#4E4E4E",
+                      }}
+                    >
+                      {`${weatherData.temperature}°C`}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "700",
+                        color: "#4E4E4E",
+                      }}
+                    >
+                      {weatherData.day}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "500",
+                        color: "#4E4E4E",
+                      }}
+                    >
+                      {`${weatherData.time} | ${weatherData.date}`}
+                    </Text>
+                  </View>
+                </View>
+                <View>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "500",
+                      color: "#4E4E4E",
+                    }}
+                  >
+                    {`Feels like ${weatherData.feelsLike}°`}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "500",
+                      color: "#4E4E4E",
+                    }}
+                  >
+                    {`High ${weatherData.high} | Low ${weatherData.low}`}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Top Cards */}
@@ -175,7 +323,10 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAccessButton}>
+            <TouchableOpacity
+              style={styles.quickAccessButton}
+              onPress={() => navigation.navigate("FieldsListing")}
+            >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <LeafCards width={18} height={18} />
                 <Text
@@ -269,7 +420,6 @@ const HomeScreen = ({ navigation }) => {
               <AiLeaf width={21} height={30} />
             </View>
 
-            {/* Gradient Border Input */}
             <LinearGradient
               colors={["#34B349", "#5FD66E"]}
               start={{ x: 1, y: 2 }}
@@ -531,7 +681,6 @@ const styles = StyleSheet.create({
     top: 1.2,
   },
   input: {
-    // height: 60,
     paddingHorizontal: 25,
     fontSize: 13,
     color: "#BCBCBC",

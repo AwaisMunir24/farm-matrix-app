@@ -233,7 +233,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
                 { color: isClosed ? "#16A34A" : "#D97706" },
               ]}
             >
-              {isClosed ? "CLOSED" : points.length < 3 ? "DRAWING" : "READY"}
+              {isClosed ? "CLOSED" : points.length < 3 ? "Ready" : "DRAWING"}
             </Text>
           </View>
         </View>
