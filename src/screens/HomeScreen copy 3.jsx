@@ -35,11 +35,8 @@ import ShareBg from "../../assets/share-bg.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
 import { STATIC_TOKEN } from "../utils/auth";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-
 
 const HomeScreen = ({ navigation }) => {
-  const tabBarHeight = useBottomTabBarHeight();
   const scrollViewRef = useRef(null);
   const inputRef = useRef(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
@@ -208,7 +205,6 @@ const HomeScreen = ({ navigation }) => {
         <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -454,16 +450,6 @@ const HomeScreen = ({ navigation }) => {
                     style={styles.aiButtonGradient}
                   >
                     <Text style={styles.aiButtonText}>Start Chat</Text>
-                     <TouchableOpacity
-                                          style={{ marginLeft: 4, position: "relative" }}
-                                        >
-                                          <ShareBg width={30} height={30} />
-                                          <Share
-                                            width={18}
-                                            height={18}
-                                            style={{ position: "absolute", top: 7, left: 5 }}
-                                          />
-                                        </TouchableOpacity>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -493,10 +479,6 @@ const styles = StyleSheet.create({
     paddingTop: 45,
     backgroundColor: "#F9F9F9",
   },
-  scrollContent: {
-  paddingBottom: 120, // 🔥 prevents bottom overlap
-  flexGrow: 1,        // 🔥 ensures scroll works on all devices
-},
   menuButton: {
     width: 40,
     height: 40,
@@ -631,7 +613,6 @@ const styles = StyleSheet.create({
   cropSectionWrapper: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
-    paddingVertical: 14,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -738,17 +719,12 @@ const styles = StyleSheet.create({
   aiButton: {
     borderRadius: 8,
     overflow: "hidden",
-    width: 140,
   },
 
   aiButtonGradient: {
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center", 
-    justifyContent: "space-between",
   },
 
   aiButtonText: {
@@ -756,20 +732,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  aiCard: {
-  backgroundColor: "#FFFFFF",
-  marginHorizontal: 20,
-  marginTop: 14,
-  marginBottom: 10, // 👈 small breathing space
-  borderRadius: 16,
-  padding: 16,
-
-  elevation: 2,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-},
 });
 
 export default HomeScreen;
