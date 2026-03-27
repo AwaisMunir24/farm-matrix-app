@@ -32,14 +32,11 @@ import WeatherIcon from "../../assets/weather-icon.svg";
 import Mic from "../../assets/mic.svg";
 import Share from "../../assets/share.svg";
 import ShareBg from "../../assets/share-bg.svg";
-import WeatherArrow from "../../assets/weather-arrow-icon.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
 import { STATIC_TOKEN } from "../utils/auth";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const HomeScreen = ({ navigation }) => {
-  const tabBarHeight = useBottomTabBarHeight();
   const scrollViewRef = useRef(null);
   const inputRef = useRef(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
@@ -208,7 +205,6 @@ const HomeScreen = ({ navigation }) => {
         <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -268,27 +264,7 @@ const HomeScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                <View
-                  style={{
-                    justifyContent: "flex-end",
-                    alignItems: "flex-end",
-                  }}
-                >
-                  <TouchableOpacity
-                    style={{
-                      borderWidth: 1,
-                      borderColor: "#D8D8D8",
-                      width: 25,
-                      height: 25,
-                      borderRadius: 50,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginBottom: 20,
-                    }}
-                    onPress={() => navigation.navigate("Weather")}
-                  >
-                    <WeatherArrow size={16} />
-                  </TouchableOpacity>
+                <View>
                   <Text
                     style={{
                       fontSize: 12,
@@ -474,16 +450,6 @@ const HomeScreen = ({ navigation }) => {
                     style={styles.aiButtonGradient}
                   >
                     <Text style={styles.aiButtonText}>Start Chat</Text>
-                    <TouchableOpacity
-                      style={{ marginLeft: 4, position: "relative" }}
-                    >
-                      <ShareBg width={30} height={30} />
-                      <Share
-                        width={18}
-                        height={18}
-                        style={{ position: "absolute", top: 7, left: 5 }}
-                      />
-                    </TouchableOpacity>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -512,10 +478,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 45,
     backgroundColor: "#F9F9F9",
-  },
-  scrollContent: {
-    paddingBottom: 120, // 🔥 prevents bottom overlap
-    flexGrow: 1, // 🔥 ensures scroll works on all devices
   },
   menuButton: {
     width: 40,
@@ -651,7 +613,6 @@ const styles = StyleSheet.create({
   cropSectionWrapper: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
-    paddingVertical: 14,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -758,37 +719,18 @@ const styles = StyleSheet.create({
   aiButton: {
     borderRadius: 8,
     overflow: "hidden",
-    width: 140,
   },
 
   aiButtonGradient: {
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
 
   aiButtonText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
-  },
-  aiCard: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 10, // 👈 small breathing space
-    borderRadius: 16,
-    padding: 16,
-
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
 });
 

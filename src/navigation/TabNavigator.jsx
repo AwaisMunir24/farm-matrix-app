@@ -10,6 +10,7 @@ import DrawPolygonFields from "../screens/Draw-polygon-fields";
 import FarmerListing from "../screens/FarmerListing";
 import FieldsListing from "../screens/FieldsListing";
 import Weather from "../screens/Weather";
+import ChatScreen from "../screens/ChatScreen";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -25,6 +26,13 @@ const TabNavigator = () => {
       <Stack.Screen name="FieldsListing" component={FieldsListing} />
       <Stack.Screen name="DrawPolygonFields" component={DrawPolygonFields} />
       <Stack.Screen name="Weather" component={Weather} />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          animation: "slide_from_bottom", // feels natural for a chat overlay
+        }}
+      />
     </Stack.Navigator>
   );
 };
