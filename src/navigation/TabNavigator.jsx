@@ -9,6 +9,7 @@ import AddNewField from "../screens/AddNewField";
 import DrawPolygonFields from "../screens/Draw-polygon-fields";
 import FarmerListing from "../screens/FarmerListing";
 import FieldsListing from "../screens/FieldsListing";
+import Weather from "../screens/Weather";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -23,6 +24,7 @@ const TabNavigator = () => {
       <Stack.Screen name="FarmerListing" component={FarmerListing} />
       <Stack.Screen name="FieldsListing" component={FieldsListing} />
       <Stack.Screen name="DrawPolygonFields" component={DrawPolygonFields} />
+      <Stack.Screen name="Weather" component={Weather} />
     </Stack.Navigator>
   );
 };

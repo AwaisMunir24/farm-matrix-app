@@ -31,6 +31,7 @@ import WeatherIcon from "../../assets/weather-icon.svg";
 import Mic from "../../assets/mic.svg";
 import Share from "../../assets/share.svg";
 import ShareBg from "../../assets/share-bg.svg";
+import WeatherArrow from "../../assets/weather-arrow-icon.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
 import { STATIC_TOKEN } from "../utils/auth";
@@ -245,7 +246,27 @@ const HomeScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                <View>
+                <View
+                  style={{
+                    justifyContent: "flex-end",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#D8D8D8",
+                      width: 25,
+                      height: 25,
+                      borderRadius: 50,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: 20,
+                    }}
+                    onPress={() => navigation.navigate("Weather")}
+                  >
+                    <WeatherArrow size={16} />
+                  </TouchableOpacity>
                   <Text
                     style={{
                       fontSize: 12,
