@@ -8,57 +8,26 @@ import {
   StatusBar,
   Dimensions,
   ImageBackground,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import axios from "axios";
+import * as Location from "expo-location";
 import WeatherIcon from "../../assets/weather-iconss.svg";
 import SmallWeatherIcon from "../../assets/small-weather-icon.svg";
+import Winds from "../../assets/winds.svg";
+import Humidity from "../../assets/humidity.svg";
+import UV from "../../assets/uv.svg";
+import Eye from "../../assets/eyee.svg";
+import { SERVER_URL } from "../utils/index";
 
-// ─── Local image asset ────────────────────────────────────────────────────────
-// Place weather-bgg.png in your assets folder and update the path if needed
 const BG_IMAGE = require("../../assets/weather-bgg.png");
 
 const { width } = Dimensions.get("window");
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const FORECAST = [
-  { label: "Today", date: "2 Jun", temp: 25, icon: "weather-partly-cloudy" },
-  { label: "Mon", date: "3 Jun", temp: 28, icon: "weather-partly-cloudy" },
-  { label: "Tue", date: "4 Jun", temp: 28, icon: "weather-partly-cloudy" },
-  { label: "Wed", date: "5 Jun", temp: 28, icon: "weather-cloudy" },
-  { label: "Thu", date: "6 Jun", temp: 26, icon: "weather-rainy" },
-];
-
-const HIGHLIGHTS = [
-  {
-    id: "wind",
-    icon: "weather-windy",
-    iconColor: "#5BA4CF",
-    label: "Wind Speed",
-    value: "7.90 km/h",
-  },
-  {
-    id: "humidity",
-    icon: "water",
-    iconColor: "#4CAF92",
-    label: "Humidity",
-    value: "85%",
-  },
-  {
-    id: "uv",
-    icon: "weather-sunny-alert",
-    iconColor: "#F5A623",
-    label: "UV Index",
-    value: "4 UV",
-  },
-  {
-    id: "visibility",
-    icon: "eye-outline",
-    iconColor: "#4CAF92",
-    label: "Visibility",
-    value: "5.6 km",
-  },
-];
+const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTg1MDA3LCJleHAiOjE3NzU0NDkwMDd9.cqbnAub_GmuclCwR1VOdKHYnYc0ejs6oX6SwLK7OJzw";
 
 // ─── ForecastCard ─────────────────────────────────────────────────────────────
 
@@ -81,7 +50,7 @@ const ForecastCard = ({ item, isFirst }) => (
 
 const HighlightTile = ({ item }) => (
   <View style={styles.highlightTile}>
-    <MaterialCommunityIcons name={item.icon} size={22} color={item.iconColor} />
+    <View style={styles.highlightIconWrapper}>{item.icon}</View>
     <View style={{ marginLeft: 10 }}>
       <Text style={styles.highlightLabel}>{item.label}</Text>
       <Text style={styles.highlightValue}>{item.value}</Text>
@@ -91,8 +60,179 @@ const HighlightTile = ({ item }) => (
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
-const Weather = () => {
+const Weather = ({ navigation }) => {
   const [cluster, setCluster] = useState("");
+  const [weatherData, setWeatherData] = useState(null);
+  const [forecast, setForecast] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── Cluster states ──────────────────────────────────────────────────────────
+  const [clusters, setClusters] = useState([]);
+  const [clusterLoading, setClusterLoading] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedCluster, setSelectedCluster] = useState(null);
+
+  // ── Fetch weather by coords ─────────────────────────────────────────────────
+  const fetchWeather = (lat, lon) => {
+    setLoading(true);
+
+    axios
+      .get(
+        `${SERVER_URL}/api/weather/detail?lat=${lat}&lon=${lon}&units=metric`,
+        {
+          headers: {
+            "x-auth-token": token,
+            "Content-Type": "application/json",
+          },
+        },
+      )
+      .then(function (response) {
+        const data = response.data.data;
+        const location = response.data.location;
+        const today = data[0];
+
+        setWeatherData({
+          temperature: Math.round(parseFloat(today.temperature.avg)),
+          feelsLike: Math.round(parseFloat(today.temperature.avg)),
+          high: Math.round(parseFloat(today.temperature.max)),
+          low: Math.round(parseFloat(today.temperature.min)),
+          humidity: today.humidity,
+          windSpeed: today.wind_speed,
+          clouds: today.clouds,
+          description: today.description,
+          locationName: location.name,
+          country: location.country,
+        });
+
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const mapped = data.map(function (item, idx) {
+          const d = new Date(item.date);
+          return {
+            label: idx === 0 ? "Today" : days[d.getDay()],
+            date: d.toLocaleDateString("en-US", {
+              day: "numeric",
+              month: "short",
+            }),
+            temp: Math.round(parseFloat(item.temperature.avg)),
+            description: item.description,
+          };
+        });
+
+        setForecast(mapped);
+        setLoading(false);
+      })
+      .catch(function (error) {
+        console.error(
+          "Weather fetch error:",
+          error.response?.status,
+          error.response?.data,
+        );
+        setLoading(false);
+      });
+  };
+
+  // ── Fetch clusters ──────────────────────────────────────────────────────────
+  const fetchClusters = () => {
+    setClusterLoading(true);
+
+    axios
+      .get(
+        `${SERVER_URL}/api/cluster?page=1&limit=10&search=&sortBy=id&order=ASC`,
+        {
+          headers: {
+            "x-auth-token": token,
+            "Content-Type": "application/json",
+          },
+        },
+      )
+      .then(function (response) {
+        // adjust based on your actual response shape
+        const list =
+          response.data.data ||
+          response.data.clusters ||
+          response.data.result ||
+          [];
+        setClusters(list);
+        setClusterLoading(false);
+      })
+      .catch(function (error) {
+        console.error(
+          "Cluster fetch error:",
+          error.response?.status,
+          error.response?.data,
+        );
+        setClusterLoading(false);
+      });
+  };
+
+  // ── On mount: get location + fetch clusters ─────────────────────────────────
+  React.useEffect(() => {
+    // fetch weather by GPS
+    Location.requestForegroundPermissionsAsync().then(function (permResult) {
+      if (permResult.status !== "granted") {
+        console.warn("Location denied — using default coords");
+        fetchWeather(31.4504, 73.135);
+        return;
+      }
+
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      })
+        .then(function (location) {
+          fetchWeather(location.coords.latitude, location.coords.longitude);
+        })
+        .catch(function (err) {
+          console.error("Location error:", err);
+          fetchWeather(31.4504, 73.135);
+        });
+    });
+
+    // fetch clusters list
+    fetchClusters();
+  }, []);
+
+  // ── Handle cluster selection ────────────────────────────────────────────────
+  const handleClusterSelect = (item) => {
+    setSelectedCluster(item);
+    setCluster(item.cluster_name || item.name || "Selected Cluster");
+    setDropdownOpen(false);
+
+    const lat = parseFloat(item.center_latitude || item.latitude || 31.4504);
+    const lon = parseFloat(item.center_longitude || item.longitude || 73.135);
+    fetchWeather(lat, lon);
+  };
+
+  // ── Toggle dropdown ─────────────────────────────────────────────────────────
+  const handleDropdownToggle = () => {
+    setDropdownOpen((prev) => !prev);
+  };
+
+  const HIGHLIGHTS = [
+    {
+      id: "wind",
+      icon: <Winds width={24} height={24} />,
+      label: "Wind Speed",
+      value: weatherData ? `${weatherData.windSpeed} km/h` : "--",
+    },
+    {
+      id: "humidity",
+      icon: <Humidity width={24} height={24} />,
+      label: "Humidity",
+      value: weatherData ? `${weatherData.humidity}%` : "--",
+    },
+    {
+      id: "uv",
+      icon: <UV width={24} height={24} />,
+      label: "UV Index",
+      value: "4 UV",
+    },
+    {
+      id: "visibility",
+      icon: <Eye width={24} height={24} />,
+      label: "Visibility",
+      value: "5.6 km",
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -106,44 +246,147 @@ const Weather = () => {
         resizeMode="cover"
       >
         {/* Back button */}
-        <TouchableOpacity style={styles.backBtn} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          activeOpacity={0.7}
+          onPress={() => navigation?.goBack()}
+        >
           <Ionicons name="chevron-back" size={20} color="#fff" />
         </TouchableOpacity>
 
         {/* Title */}
         <Text style={styles.heroTitle}>Weather Forecast</Text>
 
-        {/* Weather icon + temperature */}
-        <View style={styles.heroIconRow}>
-          <WeatherIcon width={150} height={150} />
-          <View style={styles.heroTempBlock}>
-            <Text style={styles.heroTemp}>22°C</Text>
-            <Text style={styles.heroFeels}>Feels like 17°</Text>
-            <Text style={styles.heroRange}>High 27 | Low-10</Text>
+        {loading ? (
+          <View
+            style={{
+              height: 180,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <ActivityIndicator size="large" color="#fff" />
           </View>
+        ) : (
+          <>
+            {/* Weather icon + temperature */}
+            <View style={styles.heroIconRow}>
+              <WeatherIcon width={150} height={150} />
+              <View style={styles.heroTempBlock}>
+                <Text style={styles.heroTemp}>
+                  {weatherData ? `${weatherData.temperature}°C` : "--°C"}
+                </Text>
+                <Text style={styles.heroFeels}>
+                  {weatherData
+                    ? `Feels like ${weatherData.feelsLike}°`
+                    : "Feels like --°"}
+                </Text>
+                <Text style={styles.heroRange}>
+                  {weatherData
+                    ? `High ${weatherData.high} | Low ${weatherData.low}`
+                    : "High -- | Low --"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Location name */}
+            <Text style={styles.heroDate}>
+              {weatherData
+                ? `${weatherData.locationName.toUpperCase()} | ${weatherData.country}`
+                : "-- | --"}
+            </Text>
+          </>
+        )}
+
+        {/* ── Cluster selector + inline dropdown ── */}
+        <View style={styles.clusterWrapper}>
+          <TouchableOpacity
+            style={styles.clusterSelector}
+            activeOpacity={0.8}
+            onPress={handleDropdownToggle}
+          >
+            <Feather
+              name="search"
+              size={16}
+              color="#94A3B8"
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.clusterPlaceholder}>
+              {cluster || "Select Cluster"}
+            </Text>
+            <Feather
+              name={dropdownOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#94A3B8"
+              style={{ marginLeft: "auto" }}
+            />
+          </TouchableOpacity>
+
+          {/* ── Inline dropdown list ── */}
+          {dropdownOpen && (
+            <View style={styles.dropdownList}>
+              {clusterLoading ? (
+                <View style={styles.dropdownLoader}>
+                  <ActivityIndicator size="small" color="#34B349" />
+                </View>
+              ) : clusters.length === 0 ? (
+                <View style={styles.dropdownEmpty}>
+                  <Text style={styles.dropdownEmptyText}>
+                    No clusters found
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={clusters}
+                  keyExtractor={(item, index) =>
+                    item.id ? item.id.toString() : index.toString()
+                  }
+                  nestedScrollEnabled
+                  style={{ maxHeight: 200 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownItem,
+                        selectedCluster?.id === item.id &&
+                          styles.dropdownItemActive,
+                      ]}
+                      onPress={() => handleClusterSelect(item)}
+                    >
+                      <Feather
+                        name="map-pin"
+                        size={14}
+                        color={
+                          selectedCluster?.id === item.id
+                            ? "#34B349"
+                            : "#94A3B8"
+                        }
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          selectedCluster?.id === item.id &&
+                            styles.dropdownItemTextActive,
+                        ]}
+                      >
+                        {item.cluster_name || item.name || "Unnamed Cluster"}
+                      </Text>
+                      {selectedCluster?.id === item.id && (
+                        <Feather
+                          name="check"
+                          size={14}
+                          color="#34B349"
+                          style={{ marginLeft: "auto" }}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          )}
         </View>
 
-        {/* Date & time */}
-        <Text style={styles.heroDate}>MONDAY | 4:36 PM | 25 June, 25</Text>
-
-        {/* Cluster selector */}
-        <TouchableOpacity style={styles.clusterSelector} activeOpacity={0.8}>
-          <Feather
-            name="search"
-            size={16}
-            color="#94A3B8"
-            style={{ marginRight: 6 }}
-          />
-          <Text style={styles.clusterPlaceholder}>
-            {cluster || "Select Cluster"}
-          </Text>
-          <Feather
-            name="chevron-down"
-            size={16}
-            color="#94A3B8"
-            style={{ marginLeft: "auto" }}
-          />
-        </TouchableOpacity>
         <ScrollView
           style={styles.scrollArea}
           contentContainerStyle={styles.scrollContent}
@@ -156,7 +399,7 @@ const Weather = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.forecastRow}
           >
-            {FORECAST.map((item, idx) => (
+            {forecast.map((item, idx) => (
               <ForecastCard key={item.date} item={item} isFirst={idx === 0} />
             ))}
           </ScrollView>
@@ -180,7 +423,9 @@ const Weather = () => {
                 color="#94A3B8"
               />
               <Text style={styles.footerText}>Chance of rain</Text>
-              <Text style={styles.footerValue}>2%</Text>
+              <Text style={styles.footerValue}>
+                {weatherData ? `${weatherData.clouds}%` : "2%"}
+              </Text>
             </View>
             <View style={styles.footerDivider} />
             <View style={styles.footerItem}>
@@ -190,7 +435,9 @@ const Weather = () => {
                 color="#94A3B8"
               />
               <Text style={styles.footerText}>Feels like</Text>
-              <Text style={styles.footerValue}>38°</Text>
+              <Text style={styles.footerValue}>
+                {weatherData ? `${weatherData.feelsLike}°` : "38°"}
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -218,7 +465,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
     height: "100%",
   },
-
   heroBgImage: {},
   backBtn: {
     width: 36,
@@ -270,6 +516,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 12,
   },
+
+  // ── Cluster selector ──────────────────────
+  clusterWrapper: {
+    alignItems: "center",
+    marginBottom: 4,
+    zIndex: 999,
+  },
   clusterSelector: {
     flexDirection: "row",
     alignItems: "center",
@@ -278,11 +531,56 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     width: 300,
-    marginHorizontal: "auto",
   },
   clusterPlaceholder: {
     color: "#94A3B8",
     fontSize: 14,
+  },
+
+  // ── Dropdown ──────────────────────────────
+  dropdownList: {
+    width: 300,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    marginTop: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    overflow: "hidden",
+  },
+  dropdownLoader: {
+    padding: 16,
+    alignItems: "center",
+  },
+  dropdownEmpty: {
+    padding: 16,
+    alignItems: "center",
+  },
+  dropdownEmptyText: {
+    fontSize: 13,
+    color: "#94A3B8",
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F4F8",
+  },
+  dropdownItemActive: {
+    backgroundColor: "#F0FFF4",
+  },
+  dropdownItemText: {
+    fontSize: 13,
+    color: "#4E4E4E",
+    fontWeight: "500",
+  },
+  dropdownItemTextActive: {
+    color: "#34B349",
+    fontWeight: "600",
   },
 
   // ── Scroll area ───────────────────────────
@@ -363,7 +661,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   highlightTile: {
-    width: (width - 44) / 2,
+    width: "48%",
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 14,
@@ -380,10 +678,17 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
   },
   highlightValue: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4E4E4E",
     marginTop: 2,
+  },
+  highlightIconWrapper: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   // ── Footer row ────────────────────────────
@@ -411,14 +716,14 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
   footerValue: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4E4E4E",
   },
   footerDivider: {
     width: 1,
     height: 24,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#4E4E4E",
     marginHorizontal: 12,
   },
 });

@@ -59,7 +59,7 @@ const HomeScreen = ({ navigation }) => {
   });
 
   const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTQ3OTA1LCJleHAiOjE3NzU0MTE5MDV9.ARpU26RaeEi1QF8uVfUfJxlG17rbuyEucLMQJKAxiA4";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTg1MDA3LCJleHAiOjE3NzU0NDkwMDd9.cqbnAub_GmuclCwR1VOdKHYnYc0ejs6oX6SwLK7OJzw";
 
   const fetchWeather = (lat, lon) => {
     setLoadingWeather(true);
@@ -75,6 +75,10 @@ const HomeScreen = ({ navigation }) => {
         },
       )
       .then(function (response) {
+        console.log(
+          "Weather API Response:",
+          JSON.stringify(response.data, null, 2),
+        );
         const today = response?.data?.data?.[0];
 
         if (!today) {
@@ -120,6 +124,12 @@ const HomeScreen = ({ navigation }) => {
         }, 800);
       })
       .catch(function (error) {
+        console.error(
+          "Weather error:",
+          error.response?.status,
+          error.response?.data,
+        );
+        console.log("Full error:", JSON.stringify(error.response, null, 2));
         console.error(
           "Weather error:",
           error.response?.status,
