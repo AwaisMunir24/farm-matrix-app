@@ -20,14 +20,15 @@ import axios from "axios";
 import Drawpolygon from "../../assets/draw-polygon.svg";
 import { SERVER_URL } from "../utils/index";
 import tehsilData from "../utils/TehsilData.json";
+import { getAuthToken } from "../utils/auth";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Static auth token (replace with AsyncStorage when ready) */
-const getToken = () =>
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0MzcxMTExLCJleHAiOjE3NzUyMzUxMTF9.qAYbeTTv_qVlsDilJNs_aSw_6K9Tg_Tsk44FqqaUKHs";
+// const getAuthToken = () =>
+//   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0MzcxMTExLCJleHAiOjE3NzUyMzUxMTF9.qAYbeTTv_qVlsDilJNs_aSw_6K9Tg_Tsk44FqqaUKHs";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC OPTION LISTS  (copied 1-to-1 from web FieldsInput)
@@ -168,7 +169,7 @@ const AddNewField = ({ navigation, route }) => {
   const fetchFarmers = async () => {
     setLoadingFarmers(true);
     try {
-      const token = getToken();
+      const token = getAuthToken();
       const resp = await axios.get(
         `${SERVER_URL}/api/farmers?page=1&limit=10000&search=&sortBy=id&order=ASC`,
         {
@@ -200,7 +201,7 @@ const AddNewField = ({ navigation, route }) => {
   const fetchClusters = async () => {
     setLoadingClusters(true);
     try {
-      const token = getToken();
+      const token = getAuthToken();
       const resp = await fetch(`${SERVER_URL}/api/cluster?limit=10000000`, {
         headers: { "x-auth-token": token },
       });
@@ -217,7 +218,7 @@ const AddNewField = ({ navigation, route }) => {
   const fetchRepresentatives = async () => {
     setLoadingReps(true);
     try {
-      const token = getToken();
+      const token = getAuthToken();
       const resp = await fetch(
         `${SERVER_URL}/api/user/employee?limit=10000000`,
         {
@@ -237,7 +238,7 @@ const AddNewField = ({ navigation, route }) => {
   const fetchCropTypes = async (category) => {
     setLoadingCrops(true);
     try {
-      const token = getToken();
+     const token = await getAuthToken();
       const resp = await axios.get(
         `${SERVER_URL}/api/cropType/category/${category}`,
         {
@@ -381,7 +382,7 @@ const AddNewField = ({ navigation, route }) => {
     setIsSubmitting(true);
 
     try {
-      const token = getToken();
+      const token = getAuthToken();
       const payload = preparePayload();
 
       console.log("📦 Payload:");

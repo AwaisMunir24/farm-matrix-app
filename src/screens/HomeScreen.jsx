@@ -34,9 +34,8 @@ import Share from "../../assets/share.svg";
 import ShareBg from "../../assets/share-bg.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
-import { STATIC_TOKEN } from "../utils/auth";
+import { getAuthToken } from "../utils/auth";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-
 
 const HomeScreen = ({ navigation }) => {
   const tabBarHeight = useBottomTabBarHeight();
@@ -58,14 +57,13 @@ const HomeScreen = ({ navigation }) => {
     date: "--",
   });
 
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTQ3OTA1LCJleHAiOjE3NzU0MTE5MDV9.ARpU26RaeEi1QF8uVfUfJxlG17rbuyEucLMQJKAxiA4";
+  const fetchWeather = async (lat, lon) => {
+    try {
+      setLoadingWeather(true);
 
-  const fetchWeather = (lat, lon) => {
-    setLoadingWeather(true);
-
-    axios
-      .get(
+      const token = await getAuthToken(); // ✅ wait for token
+    
+      const response = await axios.get(
         `${SERVER_URL}/api/weather/detail?lat=${lat}&lon=${lon}&units=metric`,
         {
           headers: {
@@ -73,64 +71,59 @@ const HomeScreen = ({ navigation }) => {
             "Content-Type": "application/json",
           },
         },
-      )
-      .then(function (response) {
-        const today = response?.data?.data?.[0];
+      );
 
-        if (!today) {
-          console.warn("No weather data found");
-          setLoadingWeather(false);
-          return;
-        }
+      const today = response?.data?.data?.[0];
 
-        const avg = parseFloat(today.temperature?.avg || 0);
-        const min = parseFloat(today.temperature?.min || 0);
-        const max = parseFloat(today.temperature?.max || 0);
+      if (!today) {
+        console.warn("No weather data found");
+        return;
+      }
 
-        const dayName = new Date(today.date)
-          .toLocaleDateString("en-US", { weekday: "long" })
-          .toUpperCase();
+      const avg = parseFloat(today.temperature?.avg || 0);
+      const min = parseFloat(today.temperature?.min || 0);
+      const max = parseFloat(today.temperature?.max || 0);
 
-        const now = new Date();
+      const dayName = new Date(today.date)
+        .toLocaleDateString("en-US", { weekday: "long" })
+        .toUpperCase();
 
-        const timeStr = now.toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
+      const now = new Date();
 
-        const dateStr = now.toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "long",
-          year: "2-digit",
-        });
-
-        setWeatherData({
-          temperature: Math.round(avg).toString(),
-          feelsLike: Math.round(avg).toString(),
-          high: Math.round(max).toString(),
-          low: Math.round(min).toString(),
-          condition: today.description || "Clear",
-          day: dayName,
-          time: timeStr,
-          date: dateStr,
-        });
-        setTimeout(() => {
-          setLoadingWeather(false);
-        }, 800);
-      })
-      .catch(function (error) {
-        console.error(
-          "Weather error:",
-          error.response?.status,
-          error.response?.data,
-        );
-        setTimeout(() => {
-          setLoadingWeather(false);
-        }, 800);
+      const timeStr = now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
       });
-  };
 
+      const dateStr = now.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "long",
+        year: "2-digit",
+      });
+
+      setWeatherData({
+        temperature: Math.round(avg).toString(),
+        feelsLike: Math.round(avg).toString(),
+        high: Math.round(max).toString(),
+        low: Math.round(min).toString(),
+        condition: today.description || "Clear",
+        day: dayName,
+        time: timeStr,
+        date: dateStr,
+      });
+    } catch (error) {
+      console.error(
+        "Weather error:",
+        error.response?.status,
+        error.response?.data,
+      );
+    } finally {
+      setTimeout(() => {
+        setLoadingWeather(false);
+      }, 800);
+    }
+  };
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(function (permResult) {
       if (permResult.status !== "granted") {
@@ -454,16 +447,16 @@ const HomeScreen = ({ navigation }) => {
                     style={styles.aiButtonGradient}
                   >
                     <Text style={styles.aiButtonText}>Start Chat</Text>
-                     <TouchableOpacity
-                                          style={{ marginLeft: 4, position: "relative" }}
-                                        >
-                                          <ShareBg width={30} height={30} />
-                                          <Share
-                                            width={18}
-                                            height={18}
-                                            style={{ position: "absolute", top: 7, left: 5 }}
-                                          />
-                                        </TouchableOpacity>
+                    <TouchableOpacity
+                      style={{ marginLeft: 4, position: "relative" }}
+                    >
+                      <ShareBg width={30} height={30} />
+                      <Share
+                        width={18}
+                        height={18}
+                        style={{ position: "absolute", top: 7, left: 5 }}
+                      />
+                    </TouchableOpacity>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -494,9 +487,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
   },
   scrollContent: {
-  paddingBottom: 120, // 🔥 prevents bottom overlap
-  flexGrow: 1,        // 🔥 ensures scroll works on all devices
-},
+    paddingBottom: 120, // 🔥 prevents bottom overlap
+    flexGrow: 1, // 🔥 ensures scroll works on all devices
+  },
   menuButton: {
     width: 40,
     height: 40,
@@ -747,7 +740,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     display: "flex",
     flexDirection: "row",
-    alignItems: "center", 
+    alignItems: "center",
     justifyContent: "space-between",
   },
 
@@ -757,19 +750,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   aiCard: {
-  backgroundColor: "#FFFFFF",
-  marginHorizontal: 20,
-  marginTop: 14,
-  marginBottom: 10, // 👈 small breathing space
-  borderRadius: 16,
-  padding: 16,
+    backgroundColor: "#FFFFFF",
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 10, // 👈 small breathing space
+    borderRadius: 16,
+    padding: 16,
 
-  elevation: 2,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-},
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
 });
 
 export default HomeScreen;

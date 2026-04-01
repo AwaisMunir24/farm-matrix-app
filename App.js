@@ -1,44 +1,94 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View } from "react-native";
-import { useState } from "react";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import SplashScreen from "./SplashScreen";
 import OnboardingSwiper from "./src/screens/OnboardingSwiper";
 import LoginScreen from "./src/screens/LoginScreen";
-// import BottomTabNavigator from "./src/navigation/BottomNavigator";
 import TabNavigator from "./src/navigation/TabNavigator";
+import {
+  getAuthUser,
+  hasSeenOnboarding,
+  markOnboardingDone,
+} from "./src/utils/auth";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN STATES
+// ─────────────────────────────────────────────────────────────────────────────
+const SCREENS = {
+  BOOTING: "booting",
+  SPLASH: "splash",
+  ONBOARDING: "onboarding",
+  LOGIN: "login",
+  HOME: "home",
+};
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState("splash");
+  const [screen, setScreen] = useState(SCREENS.BOOTING);
 
-  const handleGetStarted = () => {
-    setCurrentScreen("onboarding");
+  // ── Boot: decide which screen to show ──────────────────────────────────────
+  const boot = useCallback(async () => {
+    try {
+      const [user, onboardingDone] = await Promise.all([
+        getAuthUser(),
+        hasSeenOnboarding(),
+      ]);
+
+      if (user?.token) {
+        // Valid, non-expired token found → go straight to home
+        setScreen(SCREENS.HOME);
+      } else if (onboardingDone) {
+        // Seen onboarding before, but no valid session → login
+        setScreen(SCREENS.LOGIN);
+      } else {
+        // Brand new install → show splash then onboarding
+        setScreen(SCREENS.SPLASH);
+      }
+    } catch (e) {
+      console.error("Boot error:", e);
+      setScreen(SCREENS.SPLASH);
+    }
+  }, []);
+
+  useEffect(() => {
+    boot();
+  }, [boot]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleGetStarted = () => setScreen(SCREENS.ONBOARDING);
+
+  const handleOnboardingComplete = async () => {
+    await markOnboardingDone();
+    setScreen(SCREENS.LOGIN);
   };
 
-  const handleOnboardingComplete = () => {
-    setCurrentScreen("login");
+  const handleLogin = (_user) => {
+    setScreen(SCREENS.HOME);
   };
 
-  const handleLogin = () => {
-    setCurrentScreen("home");
-  };
+  // ── Render ─────────────────────────────────────────────────────────────────
+  if (screen === SCREENS.BOOTING) {
+    return (
+      <View style={styles.bootContainer}>
+        <ActivityIndicator size="large" color="#39B54B" />
+      </View>
+    );
+  }
 
-  if (currentScreen === "splash") {
+  if (screen === SCREENS.SPLASH) {
     return <SplashScreen onGetStarted={handleGetStarted} />;
   }
 
-  if (currentScreen === "onboarding") {
+  if (screen === SCREENS.ONBOARDING) {
     return <OnboardingSwiper onComplete={handleOnboardingComplete} />;
   }
 
-  if (currentScreen === "login") {
+  if (screen === SCREENS.LOGIN) {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  // Main App with Navigation
   return (
     <NavigationContainer>
-      {/* <BottomTabNavigator /> */}
       <TabNavigator />
       <StatusBar style="dark" />
     </NavigationContainer>
@@ -46,7 +96,10 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  bootContainer: {
     flex: 1,
+    backgroundColor: "#F4F7F3",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

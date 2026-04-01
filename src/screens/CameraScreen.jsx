@@ -14,10 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import axios from "axios";
 import { SERVER_URL } from "../utils";
-
-
-const STATIC_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTQ3OTA1LCJleHAiOjE3NzU0MTE5MDV9.ARpU26RaeEi1QF8uVfUfJxlG17rbuyEucLMQJKAxiA4";
+import { getAuthToken } from "../utils/auth";
 
 // ─── Screens / Modes ───────────────────────────────────────────────
 // "choose"  → show two buttons (gallery | camera)
@@ -102,47 +99,52 @@ const CameraScreen = ({ navigation }) => {
   };
 
   // ── Send to API ────────────────────────────────────────────────
-  const analyze = () => {
-    if (!photo) return;
-    if (!location) {
-      Alert.alert("Please wait", "Still fetching your location…");
-      return;
-    }
+  const analyze = async () => {
+    try {
+      if (!photo) return;
+      if (!location) {
+        Alert.alert("Please wait", "Still fetching your location…");
+        return;
+      }
 
-    setMode("loading");
+      setMode("loading");
 
-    const formData = new FormData();
-    formData.append("image", {
-      uri: photo,
-      name: "plant.jpg",
-      type: "image/jpeg",
-    });
-    formData.append(
-      "coordinates",
-      `${location.longitude}, ${location.latitude}`,
-    );
-
-    axios
-      .post(`${SERVER_URL}/api/cropAnalysis`, formData, {
-        headers: {
-          "x-auth-token": STATIC_TOKEN,
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 30000,
-      })
-      .then((resp) => {
-        console.log("API Response:", resp.data);
-        navigation.replace("Result", { image: photo, result: resp.data });
-      })
-      .catch((err) => {
-        setMode("preview");
-        let msg = "Failed to analyze. Please try again.";
-        if (err.response?.status === 413) msg = "Image is too large.";
-        else if (err.response?.status === 401) msg = "Authentication failed.";
-        else if (err.code === "ECONNABORTED") msg = "Request timed out.";
-        else if (!err.response) msg = "Network error. Check your connection.";
-        Alert.alert("Error", msg);
+      const formData = new FormData();
+      formData.append("image", {
+        uri: photo,
+        name: "plant.jpg",
+        type: "image/jpeg",
       });
+      formData.append(
+        "coordinates",
+        `${location.longitude}, ${location.latitude}`,
+      );
+      const token = await getAuthToken(); // ✅ wait for token
+
+      axios
+        .post(`${SERVER_URL}/api/cropAnalysis`, formData, {
+          headers: {
+            "x-auth-token": token,
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 30000,
+        })
+        .then((resp) => {
+          console.log("API Response:", resp.data);
+          navigation.replace("Result", { image: photo, result: resp.data });
+        })
+        .catch((err) => {
+          setMode("preview");
+          let msg = "Failed to analyze. Please try again.";
+          if (err.response?.status === 413) msg = "Image is too large.";
+          else if (err.response?.status === 401) msg = "Authentication failed.";
+          else if (err.code === "ECONNABORTED") msg = "Request timed out.";
+          else if (!err.response) msg = "Network error. Check your connection.";
+          Alert.alert("Error", msg);
+        });
+    } catch (error) {
+      console.error("erroer in analyze function:", error);
+    }
   };
 
   // ════════════════════════════════════════════════════════════════

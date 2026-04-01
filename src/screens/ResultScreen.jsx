@@ -15,11 +15,9 @@ import * as Speech from "expo-speech";
 import { Ionicons } from "@expo/vector-icons";
 import CancelIcon from "../../assets/cross-icon.svg";
 import Icon from "../../assets/result-icon.svg";
+import { getAuthToken } from "../utils/auth";
 
 const SERVER_URL = "https://farm-matrix-backend.vercel.app";
-
-const STATIC_TOKEN =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTQ3OTA1LCJleHAiOjE3NzU0MTE5MDV9.ARpU26RaeEi1QF8uVfUfJxlG17rbuyEucLMQJKAxiA4";
 
 const ResultScreen = ({ navigation, route }) => {
   const { image, result } = route.params;
@@ -33,21 +31,54 @@ const ResultScreen = ({ navigation, route }) => {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
   const wordIntervalRef = useRef(null);
 
+  // useEffect(() => {
+  //     const token = getAuthToken();
+
+  //   axios
+  //     .get(`${SERVER_URL}/api/cropAnalysis/analysis/${id}`, {
+  //       headers: {
+  //         "x-auth-token": token,
+  //       },
+  //     })
+  //     .then((resp) => {
+  //       setData(resp.data?.data);
+  //       setLoading(false);
+  //     })
+  //     .catch(() => {
+  //       setError("Failed to load analysis result.");
+  //       setLoading(false);
+  //     });
+
+  //   return () => {
+  //     Speech.stop();
+  //     clearInterval(wordIntervalRef.current);
+  //   };
+  // }, [id]);
+
   useEffect(() => {
-    axios
-      .get(`${SERVER_URL}/api/cropAnalysis/analysis/${id}`, {
-        headers: {
-          "x-auth-token": STATIC_TOKEN,
-        },
-      })
-      .then((resp) => {
+    const fetchResult = async () => {
+      try {
+        const token = await getAuthToken(); // ✅ FIX
+        console.log("Token:", token);
+
+        const resp = await axios.get(
+          `${SERVER_URL}/api/cropAnalysis/analysis/${id}`,
+          {
+            headers: {
+              "x-auth-token": token,
+            },
+          },
+        );
+
         setData(resp.data?.data);
         setLoading(false);
-      })
-      .catch(() => {
+      } catch (err) {
         setError("Failed to load analysis result.");
         setLoading(false);
-      });
+      }
+    };
+
+    fetchResult();
 
     return () => {
       Speech.stop();

@@ -18,21 +18,9 @@ import { Feather } from "@expo/vector-icons";
 import EmailIcon from "../../assets/email.svg";
 import Lock from "../../assets/lock.svg";
 import LoginMan from "../../assets/loginMan.svg";
-import { saveAuthUser } from "../utils/auth"; // adjust path if needed
+import { saveAuthUser } from "../utils/auth";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DUMMY CREDENTIALS  (matches STATIC_USER in your auth file)
-// ─────────────────────────────────────────────────────────────────────────────
-const DUMMY_EMAIL = "admin@email.com";
-const DUMMY_PASSWORD = "admin123";
-const DUMMY_USER = {
-  id: 1,
-  email: "admin@email.com",
-  username: "honey001",
-  role: "admin",
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0MzcxMTExLCJleHAiOjE3NzUyMzUxMTF9.qAYbeTTv_qVlsDilJNs_aSw_6K9Tg_Tsk44FqqaUKHs",
-};
+const SERVER_URL = "https://farm-matrix-backend.vercel.app";
 
 // ─────────────────────────────────────────────────────────────────────────────
 const LoginScreen = ({ onLogin }) => {
@@ -63,24 +51,59 @@ const LoginScreen = ({ onLogin }) => {
       setError("Please enter your password.");
       return;
     }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
     setIsLoading(true);
 
-    // Simulate a short network delay so it feels real
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const response = await fetch(`${SERVER_URL}/api/user/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
-    // — credential check —
-    if (
-      email.trim().toLowerCase() === DUMMY_EMAIL &&
-      password === DUMMY_PASSWORD
-    ) {
-      // Save user to AsyncStorage (used by getAuthUser / getAuthToken)
-      await saveAuthUser(DUMMY_USER);
-      setIsLoading(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 400) {
+          throw new Error(data?.message || "Invalid email or password.");
+        } else if (response.status === 404) {
+          throw new Error("No account found with this email.");
+        } else if (response.status === 429) {
+          throw new Error("Too many attempts. Please try again later.");
+        } else if (response.status >= 500) {
+          throw new Error("Server error. Please try again later.");
+        } else {
+          throw new Error(data?.message || "Login failed. Please try again.");
+        }
+      }
+       if(data.token.role !== "employee"){
+        setError("Unauthorized. Please use an employee account.");
+        throw new Error("Unauthorized. Please use an employee account.");
+    
+       }
+
+      // API shape: { success, message, token: { token, id, email, username, role } }
+      const { token, id, email: userEmail, username, role } = data.token;
+      const user = { id, email: userEmail, username, role, token };
+
+      await saveAuthUser(user);
       if (onLogin) onLogin();
-    } else {
+
+    } catch (err) {
+      if (err.message === "Network request failed" || err.name === "TypeError") {
+        setError("Network error. Please check your internet connection.");
+      } else {
+        setError(err.message || "Something went wrong. Please try again.");
+      }
+    } finally {
       setIsLoading(false);
-      setError("Invalid email or password. Please try again.");
     }
   };
 
@@ -199,21 +222,6 @@ const LoginScreen = ({ onLogin }) => {
             </View>
             <Text style={styles.rememberMeText}>Remember Me</Text>
           </TouchableOpacity>
-          {/* Hint strip
-          <View style={styles.hintBox}>
-            <Feather
-              name="info"
-              size={13}
-              color="#39B54B"
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.hintText}>
-              Demo credentials:{" "}
-              <Text style={styles.hintBold}>admin@email.com</Text>
-              {" / "}
-              <Text style={styles.hintBold}>admin123</Text>
-            </Text>
-          </View> */}
           {/* Login Button */}
           <TouchableOpacity
             style={[
@@ -246,7 +254,7 @@ const LoginScreen = ({ onLogin }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STYLES  (100% original — only error, hint, and disabled additions)
+// STYLES — untouched
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
@@ -290,7 +298,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#CACACA",
+    color: "#444444",
     borderWidth: 1,
     borderColor: "#E0E0E0",
     fontStyle: "italic",
@@ -315,8 +323,6 @@ const styles = StyleSheet.create({
     zIndex: 111,
     padding: 5,
   },
-
-  // Error box
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -334,8 +340,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
-
-  // Remember Me
   rememberMeContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -365,8 +369,6 @@ const styles = StyleSheet.create({
     color: "#000",
     fontWeight: "400",
   },
-
-  // Hint strip
   hintBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -387,8 +389,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#15803D",
   },
-
-  // Login button
   loginButton: {
     borderRadius: 16,
     overflow: "hidden",

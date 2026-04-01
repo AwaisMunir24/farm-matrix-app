@@ -8,10 +8,9 @@ import {
   BackHandler,
 } from "react-native";
 import axios from "axios";
+import { getAuthToken } from "../utils/auth";
 
 const SERVER_URL = "https://farm-matrix-backend.vercel.app";
-const STATIC_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTQ3OTA1LCJleHAiOjE3NzU0MTE5MDV9.ARpU26RaeEi1QF8uVfUfJxlG17rbuyEucLMQJKAxiA4";
 
 const LoadingScreen = ({ navigation, route }) => {
   const { image, location } = route.params;
@@ -24,30 +23,93 @@ const LoadingScreen = ({ navigation, route }) => {
     return () => backHandler.remove();
   }, []);
 
-  useEffect(() => {
-    const formData = new FormData();
-    formData.append("image", {
-      uri: image,
-      name: "plant.jpg",
-      type: "image/jpeg",
-    });
-    formData.append(
-      "coordinates",
-      `${location.longitude}, ${location.latitude}`,
-    );
+  // useEffect(() => {
+  //   const formData = new FormData();
+  //   formData.append("image", {
+  //     uri: image,
+  //     name: "plant.jpg",
+  //     type: "image/jpeg",
+  //   });
+  //   formData.append(
+  //     "coordinates",
+  //     `${location.longitude}, ${location.latitude}`,
+  //   );
 
-    axios
-      .post(`${SERVER_URL}/api/cropAnalysis`, formData, {
-        headers: {
-          "x-auth-token": STATIC_TOKEN,
-          "Content-Type": "multipart/form-data",
-        },
-        timeout: 30000,
-      })
-      .then((resp) => {
-        // replace() swaps Loading with Result in the stack
-        // Stack is now: [MainTabs, Camera, Result]
-        // Then we immediately reset to [MainTabs, Result] — Camera gone forever
+  //     const token = getAuthToken();
+
+  //   axios
+  //     .post(`${SERVER_URL}/api/cropAnalysis`, formData, {
+  //       headers: {
+  //         "x-auth-token": token,
+  //         "Content-Type": "multipart/form-data",
+  //       },
+  //       timeout: 30000,
+  //     })
+  //     .then((resp) => {
+  //       // replace() swaps Loading with Result in the stack
+  //       // Stack is now: [MainTabs, Camera, Result]
+  //       // Then we immediately reset to [MainTabs, Result] — Camera gone forever
+  //       navigation.reset({
+  //         index: 1,
+  //         routes: [
+  //           { name: "MainTabs" },
+  //           { name: "Result", params: { image, result: resp.data } },
+  //         ],
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.log("❌ Error:", err.response?.status, err.code, err.message);
+
+  //       let message = "Failed to analyze plant. Please try again.";
+  //       if (err.response?.status === 413) message = "Image too large.";
+  //       else if (err.response?.status === 401) message = "Auth failed.";
+  //       else if (err.code === "ECONNABORTED") message = "Timed out.";
+  //       else if (!err.response) message = "Network error.";
+
+  //       Alert.alert("Analysis Failed", message, [
+  //         {
+  //           text: "Try Again",
+  //           // Go back to Camera so user can retake
+  //           onPress: () => navigation.goBack(),
+  //         },
+  //         {
+  //           text: "Go Home",
+  //           onPress: () =>
+  //             navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+  //         },
+  //       ]);
+  //     });
+  // }, []);
+
+  useEffect(() => {
+    const analyzePlant = async () => {
+      try {
+        const formData = new FormData();
+        formData.append("image", {
+          uri: image,
+          name: "plant.jpg",
+          type: "image/jpeg",
+        });
+        formData.append(
+          "coordinates",
+          `${location.longitude}, ${location.latitude}`,
+        );
+
+        const token = await getAuthToken(); // ✅ FIX
+        console.log("Token:", token);
+
+        const resp = await axios.post(
+          `${SERVER_URL}/api/cropAnalysis`,
+          formData,
+          {
+            headers: {
+              "x-auth-token": token,
+              "Content-Type": "multipart/form-data",
+            },
+            timeout: 30000,
+          },
+        );
+
         navigation.reset({
           index: 1,
           routes: [
@@ -55,8 +117,7 @@ const LoadingScreen = ({ navigation, route }) => {
             { name: "Result", params: { image, result: resp.data } },
           ],
         });
-      })
-      .catch((err) => {
+      } catch (err) {
         console.log("❌ Error:", err.response?.status, err.code, err.message);
 
         let message = "Failed to analyze plant. Please try again.";
@@ -68,7 +129,6 @@ const LoadingScreen = ({ navigation, route }) => {
         Alert.alert("Analysis Failed", message, [
           {
             text: "Try Again",
-            // Go back to Camera so user can retake
             onPress: () => navigation.goBack(),
           },
           {
@@ -77,9 +137,11 @@ const LoadingScreen = ({ navigation, route }) => {
               navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
           },
         ]);
-      });
-  }, []);
+      }
+    };
 
+    analyzePlant(); // ✅ call async function
+  }, []);
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color="#39B54B" />
