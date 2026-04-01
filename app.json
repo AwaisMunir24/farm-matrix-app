@@ -29,10 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ],
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCHVCBqxGTXx7GNL3PLjq-OVWRSUWVLKZw"
@@ -47,9 +44,7 @@
         "projectId": "c925d1f2-de0a-4a5b-ad0e-6382dff3243e"
       }
     },
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ],
+    "plugins": ["@react-native-community/datetimepicker"],
     "owner": "abdulrehman1477"
   }
 }

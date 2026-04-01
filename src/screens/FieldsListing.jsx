@@ -122,7 +122,7 @@ const Dropdown = ({ placeholder, options = [], selectedValue, onSelect }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // FIELD ROW — accordion card matching Figma design
 // ─────────────────────────────────────────────────────────────────────────────
-const FieldRow = ({ field, onDelete }) => {
+const FieldRow = ({ field, onDelete, navigation }) => {
   const [expanded, setExpanded] = useState(false);
 
   // Farmer name from nested farmer object (same as web component)
@@ -273,10 +273,26 @@ const FieldRow = ({ field, onDelete }) => {
 
           {/* View Field | Field Book | Delete — matches Figma button layout */}
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.viewFieldBtn}>
+            <TouchableOpacity
+              style={styles.viewFieldBtn}
+              onPress={() =>
+                navigation.navigate("ViewField", {
+                  fieldId: field.id,
+                  polygon: polygonCoords,
+                  fieldName: field.field_name,
+                })
+              }
+            >
               <Text style={styles.viewFieldBtnText}>View Field</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fieldBookBtn}>
+            <TouchableOpacity
+              style={styles.fieldBookBtn}
+              onPress={() =>
+                navigation.navigate("FieldBookDetails", {
+                  fieldId: field.id,
+                })
+              }
+            >
               <Text style={styles.fieldBookBtnText}>Field Book</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -404,14 +420,6 @@ const FieldsListing = ({ navigation }) => {
     });
   }, []);
 
-  // fetchFields — handles BOTH field_name search (via API &search= param)
-  // AND farmer name search (client-side filter on the nested farmer object).
-  //
-  // Strategy:
-  //   • No search term  → normal paginated API call (page, limit=10)
-  //   • Search term     → fetch ALL records (limit=100000) so we can
-  //                       filter client-side on farmer first/last name,
-  //                       then slice into pages manually.
   const fetchFields = (
     page = 1,
     cluster = selectedCluster,
@@ -748,7 +756,12 @@ const FieldsListing = ({ navigation }) => {
             </View>
           ) : (
             fieldsData.map((field) => (
-              <FieldRow key={field.id} field={field} onDelete={handleDelete} />
+              <FieldRow
+                key={field.id}
+                field={field}
+                navigation={navigation}
+                onDelete={handleDelete}
+              />
             ))
           )}
 

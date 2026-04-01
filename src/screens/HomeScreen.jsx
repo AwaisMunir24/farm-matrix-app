@@ -32,6 +32,7 @@ import WeatherIcon from "../../assets/weather-icon.svg";
 import Mic from "../../assets/mic.svg";
 import Share from "../../assets/share.svg";
 import ShareBg from "../../assets/share-bg.svg";
+import WeatherArrow from "../../assets/weather-arrow-icon.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
 import { getAuthToken } from "../utils/auth";
@@ -57,9 +58,14 @@ const HomeScreen = ({ navigation }) => {
     date: "--",
   });
 
+<<<<<<< HEAD
   const fetchWeather = async (lat, lon) => {
     try {
       setLoadingWeather(true);
+=======
+  const token =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTg1MDA3LCJleHAiOjE3NzU0NDkwMDd9.cqbnAub_GmuclCwR1VOdKHYnYc0ejs6oX6SwLK7OJzw";
+>>>>>>> 40103c75492203a5c90af3127d3f0af14a36c2ac
 
       const token = await getAuthToken(); // ✅ wait for token
     
@@ -71,7 +77,17 @@ const HomeScreen = ({ navigation }) => {
             "Content-Type": "application/json",
           },
         },
+<<<<<<< HEAD
       );
+=======
+      )
+      .then(function (response) {
+        console.log(
+          "Weather API Response:",
+          JSON.stringify(response.data, null, 2),
+        );
+        const today = response?.data?.data?.[0];
+>>>>>>> 40103c75492203a5c90af3127d3f0af14a36c2ac
 
       const today = response?.data?.data?.[0];
 
@@ -261,7 +277,27 @@ const HomeScreen = ({ navigation }) => {
                     </Text>
                   </View>
                 </View>
-                <View>
+                <View
+                  style={{
+                    justifyContent: "flex-end",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <TouchableOpacity
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#D8D8D8",
+                      width: 25,
+                      height: 25,
+                      borderRadius: 50,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginBottom: 20,
+                    }}
+                    onPress={() => navigation.navigate("Weather")}
+                  >
+                    <WeatherArrow size={16} />
+                  </TouchableOpacity>
                   <Text
                     style={{
                       fontSize: 12,
