@@ -11,6 +11,8 @@ import FarmerListing from "../screens/FarmerListing";
 import FieldsListing from "../screens/FieldsListing";
 import Weather from "../screens/Weather";
 import ChatScreen from "../screens/ChatScreen";
+import ViewField from "../screens/ViewField";
+import FieldBookDetails from "../screens/FieldBookDetails";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -26,6 +28,8 @@ const TabNavigator = () => {
       <Stack.Screen name="FieldsListing" component={FieldsListing} />
       <Stack.Screen name="DrawPolygonFields" component={DrawPolygonFields} />
       <Stack.Screen name="Weather" component={Weather} />
+      <Stack.Screen name="ViewField" component={ViewField} />
+      <Stack.Screen name="FieldBookDetails" component={FieldBookDetails} />
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
