@@ -1,28 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-<<<<<<< HEAD
 const KEYS = {
   USER: "auth_user",
   ONBOARDING_DONE: "onboarding_done",
-=======
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH CONFIG
-// To switch to dynamic auth later, set USE_STATIC_TOKEN = false
-// and the app will automatically read from AsyncStorage instead.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const USE_STATIC_TOKEN = true;
-
-const STATIC_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhZG1pbkBlbWFpbC5jb20iLCJ1c2VybmFtZSI6ImhvbmV5MDAxIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzc0NTg1MDA3LCJleHAiOjE3NzU0NDkwMDd9.cqbnAub_GmuclCwR1VOdKHYnYc0ejs6oX6SwLK7OJzw";
-
-const STATIC_USER = {
-  id: 1,
-  email: "admin@email.com",
-  username: "honey001",
-  role: "admin",
-  token: STATIC_TOKEN,
->>>>>>> 40103c75492203a5c90af3127d3f0af14a36c2ac
 };
 
 // ── Token / User ──────────────────────────────────────────────────────────────
