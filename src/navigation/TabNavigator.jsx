@@ -13,6 +13,11 @@ import Weather from "../screens/Weather";
 import ChatScreen from "../screens/ChatScreen";
 import ViewField from "../screens/ViewField";
 import FieldBookDetails from "../screens/FieldBookDetails";
+import SeedDetailsMobile from "../screens/SeedDetailMobile";
+import LandPreparationMobile from "../screens/Landpreperationmobile";
+import SowingMobile from "../screens/Sowingmobile";
+import WeedManagementMobile from "../screens/Weedmanagmentmobile";
+import IrrigationMobile from "../screens/Irrigationmobile";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -30,6 +35,17 @@ const TabNavigator = () => {
       <Stack.Screen name="Weather" component={Weather} />
       <Stack.Screen name="ViewField" component={ViewField} />
       <Stack.Screen name="FieldBookDetails" component={FieldBookDetails} />
+      <Stack.Screen name="SeedDetailsMobile" component={SeedDetailsMobile} />
+      <Stack.Screen name="SowingMobile" component={SowingMobile} />
+      <Stack.Screen name="IrrigationMobile" component={IrrigationMobile} />
+      <Stack.Screen
+        name="WeedManagementMobile"
+        component={WeedManagementMobile}
+      />
+      <Stack.Screen
+        name="LandPreparationMobile"
+        component={LandPreparationMobile}
+      />
       <Stack.Screen
         name="Chat"
         component={ChatScreen}

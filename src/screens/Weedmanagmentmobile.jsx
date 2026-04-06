@@ -1,0 +1,693 @@
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import axios from "axios";
+import { getAuthToken } from "../utils/auth";
+import { SERVER_URL } from "../utils/index";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LABELED INPUT
+// ─────────────────────────────────────────────────────────────────────────────
+const LabeledInput = ({
+  label,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  onFocus,
+}) => (
+  <View>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput
+      style={styles.textInput}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={label}
+      placeholderTextColor="#A9A9A9"
+      keyboardType={keyboardType}
+      onFocus={onFocus}
+    />
+  </View>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE ROW
+// ─────────────────────────────────────────────────────────────────────────────
+const WeedRow = ({ item, index, onEdit, onDelete }) => (
+  <View style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]}>
+    <Text style={[styles.tableCell, { width: 30 }]}>{index + 1}</Text>
+    <Text style={[styles.tableCell, { flex: 1 }]}>
+      {item.application_date
+        ? item.application_date.split("-").reverse().join("-")
+        : "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]}>
+      {item.method_of_weeding || "-"}
+    </Text>
+    <View style={styles.tableActions}>
+      <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item)}>
+        <Feather name="edit-2" size={12} color="#fff" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteBtn} onPress={() => onDelete(item)}>
+        <Feather name="trash-2" size={12} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+const WeedManagementMobile = ({ getId }) => {
+  const scrollRef = useRef(null);
+  const formSectionRef = useRef(null);
+
+  const [expanded, setExpanded] = useState(false);
+  const [fieldBookId, setFieldBookId] = useState(null);
+  const [weedList, setWeedList] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Date picker state
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [weedData, setWeedData] = useState({
+    applicationDate: "",
+    weedingDetails: "",
+    methodOfWeeding: "",
+    dieselCost: "",
+    labourCost: "",
+    totalCost: "",
+  });
+
+  // ── Fetch data ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!getId) return;
+    setIsLoading(true);
+
+    getAuthToken().then((token) => {
+      axios
+        .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
+          },
+        })
+        .then((resp) => {
+          const data = resp.data.data;
+          setFieldBookId(data.id);
+
+          if (data.weed_treatment && Array.isArray(data.weed_treatment)) {
+            const formatted = data.weed_treatment.map((item, index) => ({
+              id: index,
+              application_date: item.application_date || "",
+              weeding_details: item.weeding_details || "",
+              method_of_weeding: item.method_of_weeding || "",
+              diesel_cost: item.diesel_cost || "",
+              labour_cost: item.labour_cost || "",
+              total_cost: item.total_cost || "",
+            }));
+            setWeedList(formatted);
+          }
+        })
+        .catch((err) => {
+          console.error("WeedManagementMobile fetch error:", err);
+        })
+        .finally(() => setIsLoading(false));
+    });
+  }, [getId]);
+
+  // ── Scroll to form ─────────────────────────────────────────────────────────
+  const scrollToForm = () => {
+    setTimeout(() => {
+      formSectionRef.current?.measureLayout(
+        scrollRef.current,
+        (x, y) => {
+          scrollRef.current?.scrollTo({ y: y, animated: true });
+        },
+        () => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        },
+      );
+    }, 150);
+  };
+
+  // ── Date Picker ────────────────────────────────────────────────────────────
+  const onDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (date) {
+      setSelectedDate(date);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      setWeedData((p) => ({ ...p, applicationDate: `${yyyy}-${mm}-${dd}` }));
+    }
+  };
+
+  const formatDisplayDate = (date) => {
+    if (!date) return "";
+    const d = String(date.getDate()).padStart(2, "0");
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const y = date.getFullYear();
+    return `${d}-${m}-${y}`;
+  };
+
+  // ── Edit ───────────────────────────────────────────────────────────────────
+  const handleEdit = (row) => {
+    setEditingIndex(row.id);
+    if (row.application_date) {
+      const parts = row.application_date.split("-");
+      if (parts.length === 3) {
+        setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
+      }
+    }
+    setWeedData({
+      applicationDate: row.application_date || "",
+      weedingDetails: row.weeding_details || "",
+      methodOfWeeding: row.method_of_weeding || "",
+      dieselCost: row.diesel_cost || "",
+      labourCost: row.labour_cost || "",
+      totalCost: row.total_cost || "",
+    });
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  // ── Delete ─────────────────────────────────────────────────────────────────
+  const handleDelete = (row) => {
+    Alert.alert(
+      "Delete Record",
+      "Are you sure you want to delete this weed treatment record?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            getAuthToken().then((token) => {
+              axios
+                .patch(
+                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/weed_treatment`,
+                  { operation: "delete", index: row.id },
+                  {
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-auth-token": token,
+                    },
+                  },
+                )
+                .then((resp) => {
+                  if (resp.data?.data?.weed_treatment) {
+                    const formatted = resp.data.data.weed_treatment.map(
+                      (item, index) => ({
+                        id: index,
+                        application_date: item.application_date || "",
+                        weeding_details: item.weeding_details || "",
+                        method_of_weeding: item.method_of_weeding || "",
+                        diesel_cost: item.diesel_cost || "",
+                        labour_cost: item.labour_cost || "",
+                        total_cost: item.total_cost || "",
+                      }),
+                    );
+                    setWeedList(formatted);
+                  }
+                  Alert.alert("Deleted", "Weed treatment record deleted.");
+                })
+                .catch(() => {
+                  Alert.alert("Error", "Failed to delete record.");
+                });
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  // ── Save / Update ──────────────────────────────────────────────────────────
+  const handleSave = () => {
+    if (!weedData.applicationDate) {
+      Alert.alert("Validation", "Please select an application date.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    const item = {
+      application_date: weedData.applicationDate,
+      weeding_details: weedData.weedingDetails,
+      method_of_weeding: weedData.methodOfWeeding,
+      diesel_cost: weedData.dieselCost,
+      labour_cost: weedData.labourCost,
+      total_cost: weedData.totalCost,
+    };
+
+    const payload =
+      editingIndex !== null
+        ? { operation: "update", index: editingIndex, item }
+        : { operation: "append", item };
+
+    getAuthToken().then((token) => {
+      axios
+        .patch(
+          `${SERVER_URL}/api/fieldbook/${fieldBookId}/weed_treatment`,
+          payload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "x-auth-token": token,
+            },
+          },
+        )
+        .then((resp) => {
+          Alert.alert(
+            "Success",
+            editingIndex !== null ? "Record updated!" : "Record added!",
+          );
+
+          if (resp.data?.data?.weed_treatment) {
+            const formatted = resp.data.data.weed_treatment.map(
+              (item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                weeding_details: item.weeding_details || "",
+                method_of_weeding: item.method_of_weeding || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              }),
+            );
+            setWeedList(formatted);
+          }
+
+          setWeedData({
+            applicationDate: "",
+            weedingDetails: "",
+            methodOfWeeding: "",
+            dieselCost: "",
+            labourCost: "",
+            totalCost: "",
+          });
+          setSelectedDate(null);
+          setEditingIndex(null);
+        })
+        .catch(() => {
+          Alert.alert("Error", "Failed to save weed treatment record.");
+        })
+        .finally(() => setIsSaving(false));
+    });
+  };
+
+  const handleCancel = () => {
+    setWeedData({
+      applicationDate: "",
+      weedingDetails: "",
+      methodOfWeeding: "",
+      dieselCost: "",
+      labourCost: "",
+      totalCost: "",
+    });
+    setSelectedDate(null);
+    setEditingIndex(null);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
+    >
+      <View style={styles.wrapper}>
+        {/* ── Accordion Header ── */}
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => setExpanded((p) => !p)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.headerLeft}>
+            <View style={styles.iconWrap}>
+              <Text style={styles.iconEmoji}>🌿</Text>
+            </View>
+            <Text style={styles.accordionTitle}>Weed Management</Text>
+            {weedList.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{weedList.length}</Text>
+              </View>
+            )}
+          </View>
+          <Feather
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#4E4E4E"
+          />
+        </TouchableOpacity>
+
+        {/* ── Expanded Content ── */}
+        {expanded && (
+          <ScrollView
+            ref={scrollRef}
+            style={styles.expandedContent}
+            contentContainerStyle={styles.expandedContentContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+          >
+            {/* ── Records Table ── */}
+            {weedList.length > 0 && (
+              <View style={styles.tableWrapper}>
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>
+                    Date
+                  </Text>
+                  <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                    Method
+                  </Text>
+                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>
+                    Actions
+                  </Text>
+                </View>
+                {weedList.map((item, index) => (
+                  <WeedRow
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </View>
+            )}
+
+            {/* ── Form ── */}
+            <View ref={formSectionRef} style={styles.formSection}>
+              {editingIndex !== null && (
+                <View style={styles.editingBanner}>
+                  <Feather name="edit-2" size={13} color="#15803D" />
+                  <Text style={styles.editingBannerText}>
+                    Editing record #{editingIndex + 1}
+                  </Text>
+                </View>
+              )}
+
+              {/* Row 1 — Date + Weeding Details */}
+              <View style={styles.formRow}>
+                <View style={styles.formCol}>
+                  <Text style={styles.inputLabel}>Application Date</Text>
+                  <TouchableOpacity
+                    style={styles.dateInput}
+                    onPress={() => {
+                      setShowDatePicker(true);
+                      scrollToForm();
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.dateInputText,
+                        { color: selectedDate ? "#383838" : "#A9A9A9" },
+                      ]}
+                    >
+                      {selectedDate
+                        ? formatDisplayDate(selectedDate)
+                        : "Select Date"}
+                    </Text>
+                    <Feather name="calendar" size={14} color="#A9A9A9" />
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={selectedDate || new Date()}
+                      mode="date"
+                      display="default"
+                      onChange={onDateChange}
+                    />
+                  )}
+                </View>
+                <View style={styles.formCol}>
+                  <LabeledInput
+                    label="Weeding Details"
+                    value={weedData.weedingDetails}
+                    onChangeText={(v) =>
+                      setWeedData((p) => ({ ...p, weedingDetails: v }))
+                    }
+                    onFocus={scrollToForm}
+                  />
+                </View>
+              </View>
+
+              {/* Row 2 — Method + Diesel */}
+              <View style={styles.formRow}>
+                <View style={styles.formCol}>
+                  <LabeledInput
+                    label="Method of Weeding"
+                    value={weedData.methodOfWeeding}
+                    onChangeText={(v) =>
+                      setWeedData((p) => ({ ...p, methodOfWeeding: v }))
+                    }
+                    onFocus={scrollToForm}
+                  />
+                </View>
+                <View style={styles.formCol}>
+                  <LabeledInput
+                    label="Diesel Cost"
+                    value={weedData.dieselCost}
+                    onChangeText={(v) =>
+                      setWeedData((p) => ({ ...p, dieselCost: v }))
+                    }
+                    keyboardType="numeric"
+                    onFocus={scrollToForm}
+                  />
+                </View>
+              </View>
+
+              {/* Row 3 — Labour + Total */}
+              <View style={styles.formRow}>
+                <View style={styles.formCol}>
+                  <LabeledInput
+                    label="Labour Cost"
+                    value={weedData.labourCost}
+                    onChangeText={(v) =>
+                      setWeedData((p) => ({ ...p, labourCost: v }))
+                    }
+                    keyboardType="numeric"
+                    onFocus={scrollToForm}
+                  />
+                </View>
+                <View style={styles.formCol}>
+                  <LabeledInput
+                    label="Total Cost"
+                    value={weedData.totalCost}
+                    onChangeText={(v) =>
+                      setWeedData((p) => ({ ...p, totalCost: v }))
+                    }
+                    keyboardType="numeric"
+                    onFocus={scrollToForm}
+                  />
+                </View>
+              </View>
+
+              {/* Buttons */}
+              <View style={styles.btnRow}>
+                {editingIndex !== null && (
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={handleCancel}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[
+                    styles.saveBtn,
+                    editingIndex !== null && { backgroundColor: "#2563EB" },
+                  ]}
+                  onPress={handleSave}
+                  disabled={isSaving}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.saveBtnText}>
+                    {isSaving
+                      ? "Saving…"
+                      : editingIndex !== null
+                        ? "Update"
+                        : "Save"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        )}
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+export default WeedManagementMobile;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLES
+// ─────────────────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  wrapper: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  accordionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#E5FAE9",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconEmoji: { fontSize: 16 },
+  accordionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#4E4E4E",
+    marginLeft: 4,
+  },
+  badge: {
+    backgroundColor: "#39B54B",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+    marginLeft: 6,
+  },
+  badgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
+  expandedContent: { flexGrow: 1 },
+  expandedContentContainer: { paddingBottom: 20 },
+  tableWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+    marginBottom: 4,
+  },
+  tableHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "#E5FAE9",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  tableHeaderCell: { fontSize: 11, fontWeight: "700", color: "#4E4E4E" },
+  tableRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5F5F5",
+  },
+  tableRowEven: { backgroundColor: "#FAFAFA" },
+  tableCell: { fontSize: 12, color: "#383838" },
+  tableActions: {
+    width: 80,
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "flex-end",
+  },
+  editBtn: { backgroundColor: "#3B82F6", borderRadius: 5, padding: 5 },
+  deleteBtn: { backgroundColor: "#EF4444", borderRadius: 5, padding: 5 },
+  formSection: { backgroundColor: "#F5F5F5", padding: 14 },
+  editingBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#DCFCE7",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  editingBannerText: { fontSize: 12, color: "#15803D", fontWeight: "600" },
+  formRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  formCol: { flex: 1 },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#4E4E4E",
+    marginBottom: 5,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#D8D8D8",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    fontSize: 12,
+    color: "#383838",
+  },
+  dateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#D8D8D8",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  dateInputText: { fontSize: 12, fontWeight: "500", flex: 1 },
+  btnRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 4,
+  },
+  saveBtn: {
+    backgroundColor: "#39B54B",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  cancelBtn: {
+    backgroundColor: "#6B7280",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignItems: "center",
+  },
+  cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
+});

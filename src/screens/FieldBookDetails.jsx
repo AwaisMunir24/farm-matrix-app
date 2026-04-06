@@ -22,7 +22,12 @@ import axios from "axios";
 import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
 import FarmingSliderMobile from "../components/FarmingSliderMobile";
-
+import UploadImageIcon from "../../assets/upload_img.svg";
+import SeedDetailsMobile from "./SeedDetailMobile";
+import LandPreparationMobile from "./Landpreperationmobile";
+import WeedManagementMobile from "./Weedmanagmentmobile";
+import IrrigationMobile from "./Irrigationmobile";
+import SowingMobile from "./Sowingmobile";
 // ─────────────────────────────────────────────────────────────────────────────
 // SIMPLE DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -441,7 +446,8 @@ const FieldBookDetails = ({ navigation, route }) => {
                 ) : (
                   <>
                     <View style={styles.uploadIconCircle}>
-                      <Feather name="user-plus" size={22} color="#39B54B" />
+                      {/* <Feather name="user-plus" size={22} color="#39B54B" /> */}
+                      <UploadImageIcon width={35} height={35} />
                     </View>
                     <Text style={styles.uploadText}>
                       Upload Image{"\n"}from System
@@ -518,6 +524,11 @@ const FieldBookDetails = ({ navigation, route }) => {
               )}
             </TouchableOpacity>
           </View>
+          <SeedDetailsMobile getId={fieldId} />
+          <LandPreparationMobile getId={fieldId} />
+          <SowingMobile getId={fieldId} />
+          <WeedManagementMobile getId={fieldId} />
+          <IrrigationMobile getId={fieldId} />
         </ScrollView>
       )}
     </SafeAreaView>
@@ -667,7 +678,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#E6FAE6",
+    // backgroundColor: "#E6FAE6",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
