@@ -7,10 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -19,35 +19,7 @@ import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LABELED INPUT
-// ─────────────────────────────────────────────────────────────────────────────
-const LabeledInput = ({
-  label,
-  value,
-  onChangeText,
-  keyboardType = "default",
-  onFocus,
-}) => (
-  <View>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput
-      style={styles.textInput}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={label}
-      placeholderTextColor="#A9A9A9"
-      keyboardType={keyboardType}
-      onFocus={onFocus}
-    />
-  </View>
-);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// IRRIGATION SOURCE PICKER  (replaces web <select>)
-// ─────────────────────────────────────────────────────────────────────────────
-const IRRIGATION_SOURCES = ["Canal", "Tube Well", "Solar Tubewell", "Drip"];
-// ─────────────────────────────────────────────────────────────────────────────
-// SIMPLE DROPDOWN  (COPIED FROM SEED DETAILS)
+// SIMPLE DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const SimpleDropdown = ({
   placeholder,
@@ -63,13 +35,13 @@ const SimpleDropdown = ({
   return (
     <>
       <TouchableOpacity
-        style={styles.dropdown}
+        style={pdStyles.dropdown}
         onPress={() => setVisible(true)}
         activeOpacity={0.75}
       >
         <Text
           style={[
-            styles.dropdownText,
+            pdStyles.dropdownText,
             { color: selectedLabel ? "#383838" : "#A9A9A9" },
           ]}
           numberOfLines={1}
@@ -78,21 +50,19 @@ const SimpleDropdown = ({
         </Text>
         <Feather name="chevron-down" size={16} color="#7A7A7A" />
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="fade">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={pdStyles.modalOverlay}
           activeOpacity={1}
           onPress={() => setVisible(false)}
         >
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{placeholder}</Text>
+          <View style={pdStyles.modalBox}>
+            <View style={pdStyles.modalHeader}>
+              <Text style={pdStyles.modalTitle}>{placeholder}</Text>
               <TouchableOpacity onPress={() => setVisible(false)}>
                 <Feather name="x" size={18} color="#4E4E4E" />
               </TouchableOpacity>
             </View>
-
             <FlatList
               data={options}
               keyExtractor={(item, idx) => String(item.value ?? idx)}
@@ -102,8 +72,8 @@ const SimpleDropdown = ({
                 return (
                   <TouchableOpacity
                     style={[
-                      styles.modalItem,
-                      isSelected && styles.modalItemActive,
+                      pdStyles.modalItem,
+                      isSelected && pdStyles.modalItemActive,
                     ]}
                     onPress={() => {
                       onSelect(item.value);
@@ -112,8 +82,8 @@ const SimpleDropdown = ({
                   >
                     <Text
                       style={[
-                        styles.modalItemText,
-                        isSelected && styles.modalItemTextActive,
+                        pdStyles.modalItemText,
+                        isSelected && pdStyles.modalItemTextActive,
                       ]}
                     >
                       {item.label}
@@ -124,6 +94,9 @@ const SimpleDropdown = ({
                   </TouchableOpacity>
                 );
               }}
+              ListEmptyComponent={
+                <Text style={pdStyles.modalEmpty}>No options</Text>
+              }
             />
           </View>
         </TouchableOpacity>
@@ -131,87 +104,54 @@ const SimpleDropdown = ({
     </>
   );
 };
-// const IrrigationSourcePicker = ({ value, onChange }) => {
-//   const [open, setOpen] = useState(false);
 
-//   return (
-//     <View>
-//       <Text style={styles.inputLabel}>Irrigation Source</Text>
-//       <TouchableOpacity
-//         style={styles.pickerTrigger}
-//         onPress={() => setOpen((p) => !p)}
-//         activeOpacity={0.8}
-//       >
-//         <Text
-//           style={[
-//             styles.pickerTriggerText,
-//             { color: value ? "#383838" : "#A9A9A9" },
-//           ]}
-//         >
-//           {value || "Select Source"}
-//         </Text>
-//         <Feather
-//           name={open ? "chevron-up" : "chevron-down"}
-//           size={14}
-//           color="#A9A9A9"
-//         />
-//       </TouchableOpacity>
-
-//       {open && (
-//         <View style={styles.dropdownList}>
-//           {IRRIGATION_SOURCES.map((src) => (
-//             <TouchableOpacity
-//               key={src}
-//               style={[
-//                 styles.dropdownItem,
-//                 value === src && styles.dropdownItemActive,
-//               ]}
-//               onPress={() => {
-//                 onChange(src);
-//                 setOpen(false);
-//               }}
-//             >
-//               <Text
-//                 style={[
-//                   styles.dropdownItemText,
-//                   value === src && styles.dropdownItemTextActive,
-//                 ]}
-//               >
-//                 {src}
-//               </Text>
-//             </TouchableOpacity>
-//           ))}
-//         </View>
-//       )}
-//     </View>
-//   );
-// };
+// ─────────────────────────────────────────────────────────────────────────────
+// LABELED INPUT
+// ─────────────────────────────────────────────────────────────────────────────
+const LabeledInput = ({
+  label,
+  value,
+  onChangeText,
+  keyboardType = "default",
+}) => (
+  <View>
+    <Text style={pdStyles.inputLabel}>{label}</Text>
+    <TextInput
+      style={pdStyles.textInput}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={label}
+      placeholderTextColor="#A9A9A9"
+      keyboardType={keyboardType}
+    />
+  </View>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABLE ROW
 // ─────────────────────────────────────────────────────────────────────────────
-const irrigationSourceOptions = [
-  { label: "Canal", value: "Canal" },
-  { label: "Tube Well", value: "Tube Well" },
-  { label: "Solar Tubewell", value: "Solar Tubewell" },
-  { label: "Drip", value: "Drip" },
-];
-const IrrigationRow = ({ item, index, onEdit, onDelete }) => (
-  <View style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]}>
-    <Text style={[styles.tableCell, { width: 30 }]}>{index + 1}</Text>
-    <Text style={[styles.tableCell, { flex: 1 }]}>
+const PestRow = ({ item, index, onEdit, onDelete }) => (
+  <View style={[pdStyles.tableRow, index % 2 === 0 && pdStyles.tableRowEven]}>
+    <Text style={[pdStyles.tableCell, { width: 28 }]}>{index + 1}</Text>
+    <Text style={[pdStyles.tableCell, { flex: 1 }]} numberOfLines={1}>
       {item.application_date
         ? item.application_date.split("-").reverse().join("-")
         : "-"}
     </Text>
-    <Text style={[styles.tableCell, { width: 70 }]}>
-      {item.irrigation_source || "-"}
+    <Text style={[pdStyles.tableCell, { width: 60 }]} numberOfLines={1}>
+      {item.pesticide_type || "-"}
     </Text>
-    <View style={styles.tableActions}>
-      <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item)}>
+    <Text style={[pdStyles.tableCell, { width: 50 }]} numberOfLines={1}>
+      {item.total_cost || "-"}
+    </Text>
+    <View style={pdStyles.tableActions}>
+      <TouchableOpacity style={pdStyles.editBtn} onPress={() => onEdit(item)}>
         <Feather name="edit-2" size={12} color="#fff" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.deleteBtn} onPress={() => onDelete(item)}>
+      <TouchableOpacity
+        style={pdStyles.deleteBtn}
+        onPress={() => onDelete(item)}
+      >
         <Feather name="trash-2" size={12} color="#fff" />
       </TouchableOpacity>
     </View>
@@ -221,34 +161,40 @@ const IrrigationRow = ({ item, index, onEdit, onDelete }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-const IrrigationMobile = ({ getId }) => {
+const PestDiseaseMobile = ({ getId }) => {
   const scrollRef = useRef(null);
-  const formSectionRef = useRef(null);
-
   const [expanded, setExpanded] = useState(false);
   const [fieldBookId, setFieldBookId] = useState(null);
-  const [irrigationList, setIrrigationList] = useState([]);
+  const [pestList, setPestList] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Date picker state
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [qtyType, setQtyType] = useState("kg");
 
-  const [irrigationData, setIrrigationData] = useState({
+  const [pestManagement, setPestManagement] = useState({
     applicationDate: "",
-    irrigationSource: "",
+    applicationType: "",
+    pesticideType: "",
     dieselCost: "",
     labourCost: "",
-    totalCost: "",
+    pesticidePrice: "",
+    kg: "",
+    liter: "",
   });
 
-  // ── Fetch data ─────────────────────────────────────────────────────────────
+  const applicationTypeOptions = [
+    { label: "Mechanical", value: "mechanical" },
+    { label: "Manual", value: "manual" },
+  ];
+  const qtyTypeOptions = [
+    { label: "Kg", value: "kg" },
+    { label: "Liter", value: "liter" },
+  ];
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!getId) return;
-    setIsLoading(true);
-
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -260,42 +206,28 @@ const IrrigationMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-
-          if (data.irrigation && Array.isArray(data.irrigation)) {
-            const formatted = data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+          if (data.disease_and_pest && Array.isArray(data.disease_and_pest)) {
+            setPestList(
+              data.disease_and_pest.map((item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                application_type: item.application_type || "",
+                pesticide_type: item.pesticide_type || "",
+                quantity_type: item.quantity_type || "",
+                kg: item.kg || "",
+                pesticide_price: item.pesticide_price || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
         })
-        .catch((err) => {
-          console.error("IrrigationMobile fetch error:", err);
-        })
-        .finally(() => setIsLoading(false));
+        .catch((err) => console.error("PestDiseaseMobile fetch error:", err));
     });
   }, [getId]);
 
-  // ── Scroll to form ─────────────────────────────────────────────────────────
-  const scrollToForm = () => {
-    setTimeout(() => {
-      formSectionRef.current?.measureLayout(
-        scrollRef.current,
-        (x, y) => {
-          scrollRef.current?.scrollTo({ y: y, animated: true });
-        },
-        () => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        },
-      );
-    }, 150);
-  };
-
-  // ── Date Picker ────────────────────────────────────────────────────────────
+  // ── Date picker ────────────────────────────────────────────────────────────
   const onDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === "ios");
     if (date) {
@@ -303,7 +235,7 @@ const IrrigationMobile = ({ getId }) => {
       const yyyy = date.getFullYear();
       const mm = String(date.getMonth() + 1).padStart(2, "0");
       const dd = String(date.getDate()).padStart(2, "0");
-      setIrrigationData((p) => ({
+      setPestManagement((p) => ({
         ...p,
         applicationDate: `${yyyy}-${mm}-${dd}`,
       }));
@@ -312,38 +244,37 @@ const IrrigationMobile = ({ getId }) => {
 
   const formatDisplayDate = (date) => {
     if (!date) return "";
-    const d = String(date.getDate()).padStart(2, "0");
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const y = date.getFullYear();
-    return `${d}-${m}-${y}`;
+    return `${String(date.getDate()).padStart(2, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
   };
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
+    const qt = row.quantity_type || "kg";
+    setQtyType(qt);
     if (row.application_date) {
       const parts = row.application_date.split("-");
-      if (parts.length === 3) {
+      if (parts.length === 3)
         setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
-      }
     }
-    setIrrigationData({
+    setPestManagement({
       applicationDate: row.application_date || "",
-      irrigationSource: row.irrigation_source || "",
-      dieselCost: row.diesel_cost || "",
-      labourCost: row.labour_cost || "",
-      totalCost: row.total_cost || "",
+      applicationType: row.application_type || "",
+      pesticideType: row.pesticide_type || "",
+      dieselCost: String(row.diesel_cost || ""),
+      labourCost: String(row.labour_cost || ""),
+      pesticidePrice: String(row.pesticide_price || ""),
+      kg: qt === "kg" ? row.kg || "" : "",
+      liter: qt === "liter" ? row.kg || "" : "",
     });
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
       "Delete Record",
-      "Are you sure you want to delete this irrigation record?",
+      "Are you sure you want to delete this pest/disease record?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -353,7 +284,7 @@ const IrrigationMobile = ({ getId }) => {
             getAuthToken().then((token) => {
               axios
                 .patch(
-                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/irrigation`,
+                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/disease_and_pest`,
                   { operation: "delete", index: row.id },
                   {
                     headers: {
@@ -363,24 +294,25 @@ const IrrigationMobile = ({ getId }) => {
                   },
                 )
                 .then((resp) => {
-                  if (resp.data?.data?.irrigation) {
-                    const formatted = resp.data.data.irrigation.map(
-                      (item, index) => ({
+                  if (resp.data?.data?.disease_and_pest) {
+                    setPestList(
+                      resp.data.data.disease_and_pest.map((item, index) => ({
                         id: index,
                         application_date: item.application_date || "",
-                        irrigation_source: item.irrigation_source || "",
+                        application_type: item.application_type || "",
+                        pesticide_type: item.pesticide_type || "",
+                        quantity_type: item.quantity_type || "",
+                        kg: item.kg || "",
+                        pesticide_price: item.pesticide_price || "",
                         diesel_cost: item.diesel_cost || "",
                         labour_cost: item.labour_cost || "",
                         total_cost: item.total_cost || "",
-                      }),
+                      })),
                     );
-                    setIrrigationList(formatted);
                   }
-                  Alert.alert("Deleted", "Irrigation record deleted.");
+                  Alert.alert("Deleted", "Pest/disease record deleted.");
                 })
-                .catch(() => {
-                  Alert.alert("Error", "Failed to delete record.");
-                });
+                .catch(() => Alert.alert("Error", "Failed to delete record."));
             });
           },
         },
@@ -388,21 +320,28 @@ const IrrigationMobile = ({ getId }) => {
     );
   };
 
-  // ── Save / Update ──────────────────────────────────────────────────────────
+  // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = () => {
-    if (!irrigationData.applicationDate) {
+    if (!pestManagement.applicationDate) {
       Alert.alert("Validation", "Please select an application date.");
       return;
     }
-
     setIsSaving(true);
 
+    const pesticidePrice = parseFloat(pestManagement.pesticidePrice) || 0;
+    const dieselCost = parseFloat(pestManagement.dieselCost) || 0;
+    const labourCost = parseFloat(pestManagement.labourCost) || 0;
+
     const item = {
-      application_date: irrigationData.applicationDate,
-      irrigation_source: irrigationData.irrigationSource,
-      diesel_cost: irrigationData.dieselCost,
-      labour_cost: irrigationData.labourCost,
-      total_cost: irrigationData.totalCost,
+      application_date: pestManagement.applicationDate,
+      application_type: pestManagement.applicationType,
+      pesticide_type: pestManagement.pesticideType,
+      quantity_type: qtyType,
+      kg: qtyType === "kg" ? pestManagement.kg : pestManagement.liter,
+      pesticide_price: pesticidePrice,
+      diesel_cost: dieselCost,
+      labour_cost: labourCost,
+      total_cost: pesticidePrice + dieselCost + labourCost,
     };
 
     const payload =
@@ -413,7 +352,7 @@ const IrrigationMobile = ({ getId }) => {
     getAuthToken().then((token) => {
       axios
         .patch(
-          `${SERVER_URL}/api/fieldbook/${fieldBookId}/irrigation`,
+          `${SERVER_URL}/api/fieldbook/${fieldBookId}/disease_and_pest`,
           payload,
           {
             headers: {
@@ -427,45 +366,54 @@ const IrrigationMobile = ({ getId }) => {
             "Success",
             editingIndex !== null ? "Record updated!" : "Record added!",
           );
-
-          if (resp.data?.data?.irrigation) {
-            const formatted = resp.data.data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+          if (resp.data?.data?.disease_and_pest) {
+            setPestList(
+              resp.data.data.disease_and_pest.map((item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                application_type: item.application_type || "",
+                pesticide_type: item.pesticide_type || "",
+                quantity_type: item.quantity_type || "",
+                kg: item.kg || "",
+                pesticide_price: item.pesticide_price || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
-
-          setIrrigationData({
+          setPestManagement({
             applicationDate: "",
-            irrigationSource: "",
+            applicationType: "",
+            pesticideType: "",
             dieselCost: "",
             labourCost: "",
-            totalCost: "",
+            pesticidePrice: "",
+            kg: "",
+            liter: "",
           });
           setSelectedDate(null);
+          setQtyType("kg");
           setEditingIndex(null);
         })
-        .catch(() => {
-          Alert.alert("Error", "Failed to save irrigation record.");
-        })
+        .catch(() => Alert.alert("Error", "Failed to save record."))
         .finally(() => setIsSaving(false));
     });
   };
 
   const handleCancel = () => {
-    setIrrigationData({
+    setPestManagement({
       applicationDate: "",
-      irrigationSource: "",
+      applicationType: "",
+      pesticideType: "",
       dieselCost: "",
       labourCost: "",
-      totalCost: "",
+      pesticidePrice: "",
+      kg: "",
+      liter: "",
     });
     setSelectedDate(null);
+    setQtyType("kg");
     setEditingIndex(null);
   };
 
@@ -473,23 +421,25 @@ const IrrigationMobile = ({ getId }) => {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={styles.wrapper}>
-        {/* ── Accordion Header ── */}
+      <View style={pdStyles.wrapper}>
+        {/* Accordion Header */}
         <TouchableOpacity
-          style={styles.accordionHeader}
+          style={pdStyles.accordionHeader}
           onPress={() => setExpanded((p) => !p)}
           activeOpacity={0.8}
         >
-          <View style={styles.headerLeft}>
-            <View style={styles.iconWrap}>
-              <Text style={styles.iconEmoji}>💧</Text>
+          <View style={pdStyles.headerLeft}>
+            <View style={pdStyles.iconWrap}>
+              <Text style={pdStyles.iconEmoji}>🐛</Text>
             </View>
-            <Text style={styles.accordionTitle}>Irrigation</Text>
-            {irrigationList.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{irrigationList.length}</Text>
+            <Text style={pdStyles.accordionTitle}>
+              Pest/Diseases Management
+            </Text>
+            {pestList.length > 0 && (
+              <View style={pdStyles.badge}>
+                <Text style={pdStyles.badgeText}>{pestList.length}</Text>
               </View>
             )}
           </View>
@@ -500,33 +450,36 @@ const IrrigationMobile = ({ getId }) => {
           />
         </TouchableOpacity>
 
-        {/* ── Expanded Content ── */}
         {expanded && (
           <ScrollView
             ref={scrollRef}
-            style={styles.expandedContent}
-            contentContainerStyle={styles.expandedContentContainer}
+            style={pdStyles.expandedContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {/* ── Records Table ── */}
-            {irrigationList.length > 0 && (
-              <View style={styles.tableWrapper}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>
+            {/* Table */}
+            {pestList.length > 0 && (
+              <View style={pdStyles.tableWrapper}>
+                <View style={pdStyles.tableHeaderRow}>
+                  <Text style={[pdStyles.tableHeaderCell, { width: 28 }]}>
+                    #
+                  </Text>
+                  <Text style={[pdStyles.tableHeaderCell, { flex: 1 }]}>
                     Date
                   </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 70 }]}>
-                    Source
+                  <Text style={[pdStyles.tableHeaderCell, { width: 60 }]}>
+                    Pesticide
                   </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>
+                  <Text style={[pdStyles.tableHeaderCell, { width: 50 }]}>
+                    Total
+                  </Text>
+                  <Text style={[pdStyles.tableHeaderCell, { width: 80 }]}>
                     Actions
                   </Text>
                 </View>
-                {irrigationList.map((item, index) => (
-                  <IrrigationRow
+                {pestList.map((item, index) => (
+                  <PestRow
                     key={item.id}
                     item={item}
                     index={index}
@@ -537,32 +490,29 @@ const IrrigationMobile = ({ getId }) => {
               </View>
             )}
 
-            {/* ── Form ── */}
-            <View ref={formSectionRef} style={styles.formSection}>
+            {/* Form */}
+            <View style={pdStyles.formSection}>
               {editingIndex !== null && (
-                <View style={styles.editingBanner}>
+                <View style={pdStyles.editingBanner}>
                   <Feather name="edit-2" size={13} color="#15803D" />
-                  <Text style={styles.editingBannerText}>
+                  <Text style={pdStyles.editingBannerText}>
                     Editing record #{editingIndex + 1}
                   </Text>
                 </View>
               )}
 
-              {/* Row 1 — Date + Source */}
-              <View style={styles.formRow}>
-                <View style={styles.formCol}>
-                  <Text style={styles.inputLabel}>Application Date</Text>
+              {/* Row 1: Date + Application Type */}
+              <View style={pdStyles.formRow}>
+                <View style={pdStyles.formCol}>
+                  <Text style={pdStyles.inputLabel}>Application Date</Text>
                   <TouchableOpacity
-                    style={styles.dateInput}
-                    onPress={() => {
-                      setShowDatePicker(true);
-                      scrollToForm();
-                    }}
+                    style={pdStyles.dateInput}
+                    onPress={() => setShowDatePicker(true)}
                     activeOpacity={0.8}
                   >
                     <Text
                       style={[
-                        styles.dateInputText,
+                        pdStyles.dateInputText,
                         { color: selectedDate ? "#383838" : "#A9A9A9" },
                       ]}
                     >
@@ -581,89 +531,119 @@ const IrrigationMobile = ({ getId }) => {
                     />
                   )}
                 </View>
-                <View style={styles.formCol}>
-                  {/* <IrrigationSourcePicker
-                    value={irrigationData.irrigationSource}
-                    onChange={(v) =>
-                      setIrrigationData((p) => ({ ...p, irrigationSource: v }))
-                    }
-                  /> */}
-                  <Text style={styles.inputLabel}>Irrigation Source</Text>
+                <View style={pdStyles.formCol}>
+                  <Text style={pdStyles.inputLabel}>Application Type</Text>
                   <SimpleDropdown
-                    placeholder="Irrigation Source"
-                    options={irrigationSourceOptions}
-                    selectedValue={irrigationData.irrigationSource}
+                    placeholder="Select Type"
+                    options={applicationTypeOptions}
+                    selectedValue={pestManagement.applicationType}
                     onSelect={(v) =>
-                      setIrrigationData((p) => ({ ...p, irrigationSource: v }))
+                      setPestManagement((p) => ({ ...p, applicationType: v }))
                     }
                   />
                 </View>
               </View>
 
-              {/* Row 2 — Diesel + Labour */}
-              <View style={styles.formRow}>
-                <View style={styles.formCol}>
+              {/* Row 2: Pesticide Type + Quantity Type */}
+              <View style={pdStyles.formRow}>
+                <View style={pdStyles.formCol}>
+                  <LabeledInput
+                    label="Pesticide Type"
+                    value={pestManagement.pesticideType}
+                    onChangeText={(v) =>
+                      setPestManagement((p) => ({ ...p, pesticideType: v }))
+                    }
+                  />
+                </View>
+                <View style={pdStyles.formCol}>
+                  <Text style={pdStyles.inputLabel}>Quantity Type</Text>
+                  <SimpleDropdown
+                    placeholder="Qty Type"
+                    options={qtyTypeOptions}
+                    selectedValue={qtyType}
+                    onSelect={(v) => setQtyType(v)}
+                  />
+                </View>
+              </View>
+
+              {/* Row 3: Qty Value + Pesticide Price */}
+              <View style={pdStyles.formRow}>
+                <View style={pdStyles.formCol}>
+                  <LabeledInput
+                    label={
+                      qtyType === "kg" ? "Quantity (Kg)" : "Quantity (Liter)"
+                    }
+                    value={
+                      qtyType === "kg"
+                        ? pestManagement.kg
+                        : pestManagement.liter
+                    }
+                    onChangeText={(v) =>
+                      setPestManagement((p) => ({
+                        ...p,
+                        [qtyType === "kg" ? "kg" : "liter"]: v,
+                      }))
+                    }
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={pdStyles.formCol}>
+                  <LabeledInput
+                    label="Pesticide Price"
+                    value={pestManagement.pesticidePrice}
+                    onChangeText={(v) =>
+                      setPestManagement((p) => ({ ...p, pesticidePrice: v }))
+                    }
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              {/* Row 4: Diesel + Labour */}
+              <View style={pdStyles.formRow}>
+                <View style={pdStyles.formCol}>
                   <LabeledInput
                     label="Diesel Cost"
-                    value={irrigationData.dieselCost}
+                    value={pestManagement.dieselCost}
                     onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, dieselCost: v }))
+                      setPestManagement((p) => ({ ...p, dieselCost: v }))
                     }
                     keyboardType="numeric"
-                    onFocus={scrollToForm}
                   />
                 </View>
-                <View style={styles.formCol}>
+                <View style={pdStyles.formCol}>
                   <LabeledInput
                     label="Labour Cost"
-                    value={irrigationData.labourCost}
+                    value={pestManagement.labourCost}
                     onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, labourCost: v }))
+                      setPestManagement((p) => ({ ...p, labourCost: v }))
                     }
                     keyboardType="numeric"
-                    onFocus={scrollToForm}
                   />
                 </View>
-              </View>
-
-              {/* Row 3 — Total */}
-              <View style={styles.formRow}>
-                <View style={styles.formCol}>
-                  <LabeledInput
-                    label="Total Cost"
-                    value={irrigationData.totalCost}
-                    onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, totalCost: v }))
-                    }
-                    keyboardType="numeric"
-                    onFocus={scrollToForm}
-                  />
-                </View>
-                {/* Empty col to maintain 2-column grid balance */}
-                <View style={styles.formCol} />
               </View>
 
               {/* Buttons */}
-              <View style={styles.btnRow}>
+              <View style={pdStyles.btnRow}>
                 {editingIndex !== null && (
                   <TouchableOpacity
-                    style={styles.cancelBtn}
+                    style={pdStyles.cancelBtn}
                     onPress={handleCancel}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                    <Text style={pdStyles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={[
-                    styles.saveBtn,
+                    pdStyles.saveBtn,
                     editingIndex !== null && { backgroundColor: "#2563EB" },
                   ]}
                   onPress={handleSave}
                   disabled={isSaving}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.saveBtnText}>
+                  <Text style={pdStyles.saveBtnText}>
                     {isSaving
                       ? "Saving…"
                       : editingIndex !== null
@@ -680,12 +660,12 @@ const IrrigationMobile = ({ getId }) => {
   );
 };
 
-export default IrrigationMobile;
+export default PestDiseaseMobile;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
 // ─────────────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const pdStyles = StyleSheet.create({
   wrapper: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -710,6 +690,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    flexShrink: 1,
   },
   iconWrap: {
     width: 30,
@@ -721,10 +702,11 @@ const styles = StyleSheet.create({
   },
   iconEmoji: { fontSize: 16 },
   accordionTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: "#4E4E4E",
     marginLeft: 4,
+    flexShrink: 1,
   },
   badge: {
     backgroundColor: "#39B54B",
@@ -737,8 +719,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   badgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
-  expandedContent: { flexGrow: 1 },
-  expandedContentContainer: { paddingBottom: 20 },
+  expandedContent: { maxHeight: 560 },
   tableWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
@@ -813,9 +794,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   dateInputText: { fontSize: 12, fontWeight: "500", flex: 1 },
-
-  // ── Irrigation source picker ──
-  pickerTrigger: {
+  dropdown: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -826,26 +805,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  pickerTriggerText: { fontSize: 12, fontWeight: "500", flex: 1 },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    marginTop: 4,
-    overflow: "hidden",
-    zIndex: 10,
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  dropdownItemActive: { backgroundColor: "#E5FAE9" },
-  dropdownItemText: { fontSize: 12, color: "#383838" },
-  dropdownItemTextActive: { color: "#39B54B", fontWeight: "600" },
-
+  dropdownText: { fontSize: 12, fontWeight: "500", flex: 1, marginRight: 4 },
   btnRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -868,24 +828,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  dropdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  dropdownText: {
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-    marginRight: 4,
-  },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -898,6 +840,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     width: "100%",
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
     elevation: 10,
   },
   modalHeader: {
@@ -922,5 +867,10 @@ const styles = StyleSheet.create({
   modalItemActive: { backgroundColor: "#F0FDF4" },
   modalItemText: { fontSize: 13, color: "#4E4E4E" },
   modalItemTextActive: { color: "#15803D", fontWeight: "700" },
-  
+  modalEmpty: {
+    padding: 20,
+    textAlign: "center",
+    color: "#A9A9A9",
+    fontSize: 13,
+  },
 });

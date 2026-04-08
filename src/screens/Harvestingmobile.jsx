@@ -7,58 +7,30 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Modal,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LABELED INPUT
+// HARVESTING TYPE OPTIONS
 // ─────────────────────────────────────────────────────────────────────────────
-const LabeledInput = ({
-  label,
-  value,
-  onChangeText,
-  keyboardType = "default",
-  onFocus,
-}) => (
-  <View>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <TextInput
-      style={styles.textInput}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={label}
-      placeholderTextColor="#A9A9A9"
-      keyboardType={keyboardType}
-      onFocus={onFocus}
-    />
-  </View>
-);
+const HARVESTING_TYPES = [
+  { label: "Mechanical", value: "mechanical" },
+  { label: "Manual", value: "manual" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// IRRIGATION SOURCE PICKER  (replaces web <select>)
+// MODAL DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
-const IRRIGATION_SOURCES = ["Canal", "Tube Well", "Solar Tubewell", "Drip"];
-// ─────────────────────────────────────────────────────────────────────────────
-// SIMPLE DROPDOWN  (COPIED FROM SEED DETAILS)
-// ─────────────────────────────────────────────────────────────────────────────
-const SimpleDropdown = ({
-  placeholder,
-  options = [],
-  selectedValue,
-  onSelect,
-}) => {
+const HarvestingTypePicker = ({ value, onChange }) => {
   const [visible, setVisible] = useState(false);
-  const selectedLabel = options.find(
-    (o) => String(o.value) === String(selectedValue),
-  )?.label;
+  const selectedLabel = HARVESTING_TYPES.find((t) => t.value === value)?.label;
 
   return (
     <>
@@ -74,7 +46,7 @@ const SimpleDropdown = ({
           ]}
           numberOfLines={1}
         >
-          {selectedLabel || placeholder}
+          {selectedLabel || "Select Type"}
         </Text>
         <Feather name="chevron-down" size={16} color="#7A7A7A" />
       </TouchableOpacity>
@@ -87,18 +59,18 @@ const SimpleDropdown = ({
         >
           <View style={styles.modalBox}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{placeholder}</Text>
+              <Text style={styles.modalTitle}>Harvesting Type</Text>
               <TouchableOpacity onPress={() => setVisible(false)}>
                 <Feather name="x" size={18} color="#4E4E4E" />
               </TouchableOpacity>
             </View>
 
             <FlatList
-              data={options}
-              keyExtractor={(item, idx) => String(item.value ?? idx)}
+              data={HARVESTING_TYPES}
+              keyExtractor={(item) => item.value}
               style={{ maxHeight: 260 }}
               renderItem={({ item }) => {
-                const isSelected = String(item.value) === String(selectedValue);
+                const isSelected = item.value === value;
                 return (
                   <TouchableOpacity
                     style={[
@@ -106,7 +78,7 @@ const SimpleDropdown = ({
                       isSelected && styles.modalItemActive,
                     ]}
                     onPress={() => {
-                      onSelect(item.value);
+                      onChange(item.value);
                       setVisible(false);
                     }}
                   >
@@ -124,6 +96,9 @@ const SimpleDropdown = ({
                   </TouchableOpacity>
                 );
               }}
+              ListEmptyComponent={
+                <Text style={styles.modalEmpty}>No options</Text>
+              }
             />
           </View>
         </TouchableOpacity>
@@ -131,81 +106,33 @@ const SimpleDropdown = ({
     </>
   );
 };
-// const IrrigationSourcePicker = ({ value, onChange }) => {
-//   const [open, setOpen] = useState(false);
-
-//   return (
-//     <View>
-//       <Text style={styles.inputLabel}>Irrigation Source</Text>
-//       <TouchableOpacity
-//         style={styles.pickerTrigger}
-//         onPress={() => setOpen((p) => !p)}
-//         activeOpacity={0.8}
-//       >
-//         <Text
-//           style={[
-//             styles.pickerTriggerText,
-//             { color: value ? "#383838" : "#A9A9A9" },
-//           ]}
-//         >
-//           {value || "Select Source"}
-//         </Text>
-//         <Feather
-//           name={open ? "chevron-up" : "chevron-down"}
-//           size={14}
-//           color="#A9A9A9"
-//         />
-//       </TouchableOpacity>
-
-//       {open && (
-//         <View style={styles.dropdownList}>
-//           {IRRIGATION_SOURCES.map((src) => (
-//             <TouchableOpacity
-//               key={src}
-//               style={[
-//                 styles.dropdownItem,
-//                 value === src && styles.dropdownItemActive,
-//               ]}
-//               onPress={() => {
-//                 onChange(src);
-//                 setOpen(false);
-//               }}
-//             >
-//               <Text
-//                 style={[
-//                   styles.dropdownItemText,
-//                   value === src && styles.dropdownItemTextActive,
-//                 ]}
-//               >
-//                 {src}
-//               </Text>
-//             </TouchableOpacity>
-//           ))}
-//         </View>
-//       )}
-//     </View>
-//   );
-// };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TABLE ROW
 // ─────────────────────────────────────────────────────────────────────────────
-const irrigationSourceOptions = [
-  { label: "Canal", value: "Canal" },
-  { label: "Tube Well", value: "Tube Well" },
-  { label: "Solar Tubewell", value: "Solar Tubewell" },
-  { label: "Drip", value: "Drip" },
-];
-const IrrigationRow = ({ item, index, onEdit, onDelete }) => (
+const HarvestingRow = ({ item, index, onEdit, onDelete }) => (
   <View style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]}>
-    <Text style={[styles.tableCell, { width: 30 }]}>{index + 1}</Text>
-    <Text style={[styles.tableCell, { flex: 1 }]}>
-      {item.application_date
-        ? item.application_date.split("-").reverse().join("-")
+    <Text style={[styles.tableCell, styles.colNo]}>{index + 1}</Text>
+    <Text style={[styles.tableCell, styles.colEst]} numberOfLines={1}>
+      {item.estimated_harvest || "-"}
+    </Text>
+    <Text style={[styles.tableCell, styles.colActual]} numberOfLines={1}>
+      {item.actual_harvest || "-"}
+    </Text>
+    <Text style={[styles.tableCell, styles.colType]} numberOfLines={1}>
+      {item.harvesting_type
+        ? item.harvesting_type.charAt(0).toUpperCase() +
+          item.harvesting_type.slice(1)
         : "-"}
     </Text>
-    <Text style={[styles.tableCell, { width: 70 }]}>
-      {item.irrigation_source || "-"}
+    <Text style={[styles.tableCell, styles.colCost]} numberOfLines={1}>
+      {item.diesel_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, styles.colCost]} numberOfLines={1}>
+      {item.labour_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, styles.colCost]} numberOfLines={1}>
+      {item.total_cost || "-"}
     </Text>
     <View style={styles.tableActions}>
       <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item)}>
@@ -221,34 +148,45 @@ const IrrigationRow = ({ item, index, onEdit, onDelete }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-const IrrigationMobile = ({ getId }) => {
+const HarvestingMobile = ({ getId }) => {
   const scrollRef = useRef(null);
   const formSectionRef = useRef(null);
 
+  // ✅ FIX: inputRefs must be a plain object of individual useRef() calls,
+  //         NOT nested under .current — otherwise ref={inputRefs.current[key]}
+  //         is undefined and crashes on focus, which closes the keyboard.
+  const inputRefs = {
+    estimatedHarvest: useRef(null),
+    actualHarvesting: useRef(null),
+    yeildCostPerMound: useRef(null),
+    advisoryDetail: useRef(null),
+    dieselCost: useRef(null),
+    labourCost: useRef(null),
+    totalCost: useRef(null),
+  };
+
   const [expanded, setExpanded] = useState(false);
   const [fieldBookId, setFieldBookId] = useState(null);
-  const [irrigationList, setIrrigationList] = useState([]);
+  const [harvestingList, setHarvestingList] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Date picker state
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const [irrigationData, setIrrigationData] = useState({
-    applicationDate: "",
-    irrigationSource: "",
+  const [harvesting, setHarvesting] = useState({
+    estimatedHarvest: "",
+    actualHarvesting: "",
+    yeildCostPerMound: "",
+    advisoryDetail: "",
+    harvestingType: "",
     dieselCost: "",
     labourCost: "",
     totalCost: "",
   });
 
-  // ── Fetch data ─────────────────────────────────────────────────────────────
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!getId) return;
     setIsLoading(true);
-
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -260,90 +198,78 @@ const IrrigationMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-
-          if (data.irrigation && Array.isArray(data.irrigation)) {
-            const formatted = data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+          if (data.harvesting && Array.isArray(data.harvesting)) {
+            setHarvestingList(
+              data.harvesting.map((item, index) => ({
+                id: index,
+                estimated_harvest: item.estimated_harvest || "",
+                actual_harvest: item.actual_harvest || "",
+                yield_cost_per_mound: item.yield_cost_per_mound || "",
+                advisory_details: item.advisory_details || "",
+                harvesting_type: item.harvesting_type || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
         })
-        .catch((err) => {
-          console.error("IrrigationMobile fetch error:", err);
-        })
+        .catch((err) => console.error("HarvestingMobile fetch error:", err))
         .finally(() => setIsLoading(false));
     });
   }, [getId]);
 
-  // ── Scroll to form ─────────────────────────────────────────────────────────
+  // ── Scroll helpers ─────────────────────────────────────────────────────────
   const scrollToForm = () => {
     setTimeout(() => {
       formSectionRef.current?.measureLayout(
         scrollRef.current,
-        (x, y) => {
-          scrollRef.current?.scrollTo({ y: y, animated: true });
-        },
-        () => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        },
+        (x, y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        () => scrollRef.current?.scrollToEnd({ animated: true }),
       );
     }, 150);
   };
 
-  // ── Date Picker ────────────────────────────────────────────────────────────
-  const onDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === "ios");
-    if (date) {
-      setSelectedDate(date);
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
-      setIrrigationData((p) => ({
-        ...p,
-        applicationDate: `${yyyy}-${mm}-${dd}`,
-      }));
-    }
-  };
+  // ✅ FIX: scrollToInput now correctly accesses inputRefs[key] (not inputRefs.current[key])
+  const scrollToInput = (key) => {
+    setTimeout(() => {
+      const ref = inputRefs[key];
+      if (!ref?.current || !scrollRef?.current) return;
 
-  const formatDisplayDate = (date) => {
-    if (!date) return "";
-    const d = String(date.getDate()).padStart(2, "0");
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const y = date.getFullYear();
-    return `${d}-${m}-${y}`;
+      ref.current.measureLayout(
+        scrollRef.current,
+        (x, y) => {
+          scrollRef.current.scrollTo({
+            y: Math.max(0, y - 120),
+            animated: true,
+          });
+        },
+        () => {},
+      );
+    }, 150);
   };
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
-    if (row.application_date) {
-      const parts = row.application_date.split("-");
-      if (parts.length === 3) {
-        setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
-      }
-    }
-    setIrrigationData({
-      applicationDate: row.application_date || "",
-      irrigationSource: row.irrigation_source || "",
+    setHarvesting({
+      estimatedHarvest: row.estimated_harvest || "",
+      actualHarvesting: row.actual_harvest || "",
+      yeildCostPerMound: row.yield_cost_per_mound || "",
+      advisoryDetail: row.advisory_details || "",
+      harvestingType: row.harvesting_type || "",
       dieselCost: row.diesel_cost || "",
       labourCost: row.labour_cost || "",
       totalCost: row.total_cost || "",
     });
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
   // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
       "Delete Record",
-      "Are you sure you want to delete this irrigation record?",
+      "Are you sure you want to delete this harvesting record?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -353,7 +279,7 @@ const IrrigationMobile = ({ getId }) => {
             getAuthToken().then((token) => {
               axios
                 .patch(
-                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/irrigation`,
+                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/harvesting`,
                   { operation: "delete", index: row.id },
                   {
                     headers: {
@@ -363,24 +289,24 @@ const IrrigationMobile = ({ getId }) => {
                   },
                 )
                 .then((resp) => {
-                  if (resp.data?.data?.irrigation) {
-                    const formatted = resp.data.data.irrigation.map(
-                      (item, index) => ({
+                  if (resp.data?.data?.harvesting) {
+                    setHarvestingList(
+                      resp.data.data.harvesting.map((item, index) => ({
                         id: index,
-                        application_date: item.application_date || "",
-                        irrigation_source: item.irrigation_source || "",
+                        estimated_harvest: item.estimated_harvest || "",
+                        actual_harvest: item.actual_harvest || "",
+                        yield_cost_per_mound: item.yield_cost_per_mound || "",
+                        advisory_details: item.advisory_details || "",
+                        harvesting_type: item.harvesting_type || "",
                         diesel_cost: item.diesel_cost || "",
                         labour_cost: item.labour_cost || "",
                         total_cost: item.total_cost || "",
-                      }),
+                      })),
                     );
-                    setIrrigationList(formatted);
                   }
-                  Alert.alert("Deleted", "Irrigation record deleted.");
+                  Alert.alert("Deleted", "Harvesting record deleted.");
                 })
-                .catch(() => {
-                  Alert.alert("Error", "Failed to delete record.");
-                });
+                .catch(() => Alert.alert("Error", "Failed to delete record."));
             });
           },
         },
@@ -390,21 +316,17 @@ const IrrigationMobile = ({ getId }) => {
 
   // ── Save / Update ──────────────────────────────────────────────────────────
   const handleSave = () => {
-    if (!irrigationData.applicationDate) {
-      Alert.alert("Validation", "Please select an application date.");
-      return;
-    }
-
     setIsSaving(true);
-
     const item = {
-      application_date: irrigationData.applicationDate,
-      irrigation_source: irrigationData.irrigationSource,
-      diesel_cost: irrigationData.dieselCost,
-      labour_cost: irrigationData.labourCost,
-      total_cost: irrigationData.totalCost,
+      estimated_harvest: harvesting.estimatedHarvest,
+      actual_harvest: harvesting.actualHarvesting,
+      yield_cost_per_mound: harvesting.yeildCostPerMound,
+      advisory_details: harvesting.advisoryDetail,
+      harvesting_type: harvesting.harvestingType,
+      diesel_cost: harvesting.dieselCost,
+      labour_cost: harvesting.labourCost,
+      total_cost: harvesting.totalCost,
     };
-
     const payload =
       editingIndex !== null
         ? { operation: "update", index: editingIndex, item }
@@ -413,7 +335,7 @@ const IrrigationMobile = ({ getId }) => {
     getAuthToken().then((token) => {
       axios
         .patch(
-          `${SERVER_URL}/api/fieldbook/${fieldBookId}/irrigation`,
+          `${SERVER_URL}/api/fieldbook/${fieldBookId}/harvesting`,
           payload,
           {
             headers: {
@@ -427,47 +349,70 @@ const IrrigationMobile = ({ getId }) => {
             "Success",
             editingIndex !== null ? "Record updated!" : "Record added!",
           );
-
-          if (resp.data?.data?.irrigation) {
-            const formatted = resp.data.data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+          if (resp.data?.data?.harvesting) {
+            setHarvestingList(
+              resp.data.data.harvesting.map((item, index) => ({
+                id: index,
+                estimated_harvest: item.estimated_harvest || "",
+                actual_harvest: item.actual_harvest || "",
+                yield_cost_per_mound: item.yield_cost_per_mound || "",
+                advisory_details: item.advisory_details || "",
+                harvesting_type: item.harvesting_type || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
-
-          setIrrigationData({
-            applicationDate: "",
-            irrigationSource: "",
+          setHarvesting({
+            estimatedHarvest: "",
+            actualHarvesting: "",
+            yeildCostPerMound: "",
+            advisoryDetail: "",
+            harvestingType: "",
             dieselCost: "",
             labourCost: "",
             totalCost: "",
           });
-          setSelectedDate(null);
           setEditingIndex(null);
         })
-        .catch(() => {
-          Alert.alert("Error", "Failed to save irrigation record.");
-        })
+        .catch(() => Alert.alert("Error", "Failed to save harvesting record."))
         .finally(() => setIsSaving(false));
     });
   };
 
   const handleCancel = () => {
-    setIrrigationData({
-      applicationDate: "",
-      irrigationSource: "",
+    setHarvesting({
+      estimatedHarvest: "",
+      actualHarvesting: "",
+      yeildCostPerMound: "",
+      advisoryDetail: "",
+      harvestingType: "",
       dieselCost: "",
       labourCost: "",
       totalCost: "",
     });
-    setSelectedDate(null);
     setEditingIndex(null);
   };
+
+  // ── Field helper ───────────────────────────────────────────────────────────
+  // ✅ FIX: ref={inputRefs[refKey]} instead of the broken setInputRef(refKey)
+  const Field = ({ label, stateKey, keyboardType = "default", refKey }) => (
+    <View>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TextInput
+        ref={inputRefs[refKey]}
+        style={styles.textInput}
+        value={harvesting[stateKey]}
+        onChangeText={(v) => setHarvesting((p) => ({ ...p, [stateKey]: v }))}
+        placeholder={label}
+        placeholderTextColor="#A9A9A9"
+        keyboardType={keyboardType}
+        onFocus={() => scrollToInput(refKey)}
+        blurOnSubmit={false}
+      />
+    </View>
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -484,12 +429,12 @@ const IrrigationMobile = ({ getId }) => {
         >
           <View style={styles.headerLeft}>
             <View style={styles.iconWrap}>
-              <Text style={styles.iconEmoji}>💧</Text>
+              <Text style={styles.iconEmoji}>🌾</Text>
             </View>
-            <Text style={styles.accordionTitle}>Irrigation</Text>
-            {irrigationList.length > 0 && (
+            <Text style={styles.accordionTitle}>Harvesting</Text>
+            {harvestingList.length > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{irrigationList.length}</Text>
+                <Text style={styles.badgeText}>{harvestingList.length}</Text>
               </View>
             )}
           </View>
@@ -509,31 +454,60 @@ const IrrigationMobile = ({ getId }) => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
+            scrollEventThrottle={16}
           >
-            {/* ── Records Table ── */}
-            {irrigationList.length > 0 && (
+            {/* ── Records Table with horizontal scroll ── */}
+            {harvestingList.length > 0 && (
               <View style={styles.tableWrapper}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>
-                    Date
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 70 }]}>
-                    Source
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>
-                    Actions
-                  </Text>
-                </View>
-                {irrigationList.map((item, index) => (
-                  <IrrigationRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={true}
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  <View>
+                    {/* Table Header */}
+                    <View style={styles.tableHeaderRow}>
+                      <Text style={[styles.tableHeaderCell, styles.colNo]}>
+                        #
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colEst]}>
+                        Est. Harvest
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colActual]}>
+                        Actual
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colType]}>
+                        Type
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colCost]}>
+                        Diesel
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colCost]}>
+                        Labour
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, styles.colCost]}>
+                        Total
+                      </Text>
+                      <Text
+                        style={[styles.tableHeaderCell, styles.tableActions]}
+                      >
+                        Actions
+                      </Text>
+                    </View>
+
+                    {/* Table Rows */}
+                    {harvestingList.map((item, index) => (
+                      <HarvestingRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
@@ -548,98 +522,86 @@ const IrrigationMobile = ({ getId }) => {
                 </View>
               )}
 
-              {/* Row 1 — Date + Source */}
+              {/* Row 1 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <Text style={styles.inputLabel}>Application Date</Text>
-                  <TouchableOpacity
-                    style={styles.dateInput}
-                    onPress={() => {
-                      setShowDatePicker(true);
-                      scrollToForm();
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.dateInputText,
-                        { color: selectedDate ? "#383838" : "#A9A9A9" },
-                      ]}
-                    >
-                      {selectedDate
-                        ? formatDisplayDate(selectedDate)
-                        : "Select Date"}
-                    </Text>
-                    <Feather name="calendar" size={14} color="#A9A9A9" />
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={selectedDate || new Date()}
-                      mode="date"
-                      display="default"
-                      onChange={onDateChange}
-                    />
-                  )}
+                  <Field
+                    label="Estimated Harvest"
+                    stateKey="estimatedHarvest"
+                    refKey="estimatedHarvest"
+                  />
                 </View>
                 <View style={styles.formCol}>
-                  {/* <IrrigationSourcePicker
-                    value={irrigationData.irrigationSource}
+                  <Field
+                    label="Actual Harvest"
+                    stateKey="actualHarvesting"
+                    refKey="actualHarvesting"
+                  />
+                </View>
+              </View>
+
+              {/* Row 2 */}
+              <View style={styles.formRow}>
+                <View style={styles.formCol}>
+                  <Field
+                    label="Yield Cost/Mound"
+                    stateKey="yeildCostPerMound"
+                    keyboardType="numeric"
+                    refKey="yeildCostPerMound"
+                  />
+                </View>
+                <View style={styles.formCol}>
+                  <Field
+                    label="Advisory Details"
+                    stateKey="advisoryDetail"
+                    refKey="advisoryDetail"
+                  />
+                </View>
+              </View>
+
+              {/* Row 3 — Harvesting Type modal dropdown */}
+              <View style={[styles.formRow, { marginBottom: 10 }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Harvesting Type</Text>
+                  <HarvestingTypePicker
+                    value={harvesting.harvestingType}
                     onChange={(v) =>
-                      setIrrigationData((p) => ({ ...p, irrigationSource: v }))
-                    }
-                  /> */}
-                  <Text style={styles.inputLabel}>Irrigation Source</Text>
-                  <SimpleDropdown
-                    placeholder="Irrigation Source"
-                    options={irrigationSourceOptions}
-                    selectedValue={irrigationData.irrigationSource}
-                    onSelect={(v) =>
-                      setIrrigationData((p) => ({ ...p, irrigationSource: v }))
+                      setHarvesting((p) => ({ ...p, harvestingType: v }))
                     }
                   />
                 </View>
               </View>
 
-              {/* Row 2 — Diesel + Labour */}
+              {/* Row 4 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <LabeledInput
+                  <Field
                     label="Diesel Cost"
-                    value={irrigationData.dieselCost}
-                    onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, dieselCost: v }))
-                    }
+                    stateKey="dieselCost"
                     keyboardType="numeric"
-                    onFocus={scrollToForm}
+                    refKey="dieselCost"
                   />
                 </View>
                 <View style={styles.formCol}>
-                  <LabeledInput
+                  <Field
                     label="Labour Cost"
-                    value={irrigationData.labourCost}
-                    onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, labourCost: v }))
-                    }
+                    stateKey="labourCost"
                     keyboardType="numeric"
-                    onFocus={scrollToForm}
+                    refKey="labourCost"
                   />
                 </View>
               </View>
 
-              {/* Row 3 — Total */}
+              {/* Row 5 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <LabeledInput
+                  <Field
                     label="Total Cost"
-                    value={irrigationData.totalCost}
-                    onChangeText={(v) =>
-                      setIrrigationData((p) => ({ ...p, totalCost: v }))
-                    }
+                    stateKey="totalCost"
                     keyboardType="numeric"
-                    onFocus={scrollToForm}
+                    refKey="totalCost"
                   />
                 </View>
-                {/* Empty col to maintain 2-column grid balance */}
                 <View style={styles.formCol} />
               </View>
 
@@ -680,7 +642,7 @@ const IrrigationMobile = ({ getId }) => {
   );
 };
 
-export default IrrigationMobile;
+export default HarvestingMobile;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STYLES
@@ -706,11 +668,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconWrap: {
     width: 30,
     height: 30,
@@ -738,7 +696,12 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
   expandedContent: { flexGrow: 1 },
-  expandedContentContainer: { paddingBottom: 20 },
+  expandedContentContainer: { paddingBottom: 40 },
+  colNo: { width: 28 },
+  colEst: { width: 100 },
+  colActual: { width: 90 },
+  colType: { width: 80 },
+  colCost: { width: 75 },
   tableWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
@@ -801,73 +764,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#383838",
   },
-  dateInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  dateInputText: { fontSize: 12, fontWeight: "500", flex: 1 },
-
-  // ── Irrigation source picker ──
-  pickerTrigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  pickerTriggerText: { fontSize: 12, fontWeight: "500", flex: 1 },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    marginTop: 4,
-    overflow: "hidden",
-    zIndex: 10,
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  dropdownItemActive: { backgroundColor: "#E5FAE9" },
-  dropdownItemText: { fontSize: 12, color: "#383838" },
-  dropdownItemTextActive: { color: "#39B54B", fontWeight: "600" },
-
-  btnRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-    marginTop: 4,
-  },
-  saveBtn: {
-    backgroundColor: "#39B54B",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    alignItems: "center",
-  },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  cancelBtn: {
-    backgroundColor: "#6B7280",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    alignItems: "center",
-  },
-  cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
   dropdown: {
     flexDirection: "row",
     alignItems: "center",
@@ -879,13 +775,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  dropdownText: {
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-    marginRight: 4,
-  },
-
+  dropdownText: { fontSize: 12, fontWeight: "500", flex: 1, marginRight: 4 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -898,6 +788,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     width: "100%",
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
     elevation: 10,
   },
   modalHeader: {
@@ -922,5 +815,32 @@ const styles = StyleSheet.create({
   modalItemActive: { backgroundColor: "#F0FDF4" },
   modalItemText: { fontSize: 13, color: "#4E4E4E" },
   modalItemTextActive: { color: "#15803D", fontWeight: "700" },
-  
+  modalEmpty: {
+    padding: 20,
+    textAlign: "center",
+    color: "#A9A9A9",
+    fontSize: 13,
+  },
+  btnRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+    marginTop: 4,
+  },
+  saveBtn: {
+    backgroundColor: "#39B54B",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    alignItems: "center",
+  },
+  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  cancelBtn: {
+    backgroundColor: "#6B7280",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignItems: "center",
+  },
+  cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
 });

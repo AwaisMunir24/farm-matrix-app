@@ -1,3 +1,6 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// SeedDetailsMobile.jsx  — with horizontal table scroll
+// ═══════════════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -17,9 +20,6 @@ import axios from "axios";
 import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SIMPLE DROPDOWN
-// ─────────────────────────────────────────────────────────────────────────────
 const SimpleDropdown = ({
   placeholder,
   options = [],
@@ -30,7 +30,6 @@ const SimpleDropdown = ({
   const selectedLabel = options.find(
     (o) => String(o.value) === String(selectedValue),
   )?.label;
-
   return (
     <>
       <TouchableOpacity
@@ -49,7 +48,6 @@ const SimpleDropdown = ({
         </Text>
         <Feather name="chevron-down" size={16} color="#7A7A7A" />
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="fade">
         <TouchableOpacity
           style={sdStyles.modalOverlay}
@@ -105,9 +103,6 @@ const SimpleDropdown = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LABELED INPUT  (with onFocus callback for scroll)
-// ─────────────────────────────────────────────────────────────────────────────
 const LabeledInput = ({
   label,
   value,
@@ -130,17 +125,20 @@ const LabeledInput = ({
   </View>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SEED ROW
-// ─────────────────────────────────────────────────────────────────────────────
 const SeedRow = ({ item, index, onEdit, onDelete }) => (
   <View style={[sdStyles.tableRow, index % 2 === 0 && sdStyles.tableRowEven]}>
-    <Text style={[sdStyles.tableCell, { width: 30 }]}>{index + 1}</Text>
-    <Text style={[sdStyles.tableCell, { flex: 1 }]}>
+    <Text style={[sdStyles.tableCell, sdStyles.colNo]}>{index + 1}</Text>
+    <Text style={[sdStyles.tableCell, sdStyles.colVariety]} numberOfLines={1}>
       {item.variety_name || "-"}
     </Text>
-    <Text style={[sdStyles.tableCell, { width: 60 }]}>
+    <Text style={[sdStyles.tableCell, sdStyles.colQty]} numberOfLines={1}>
       {item.quantity_of_seed || "-"}
+    </Text>
+    <Text style={[sdStyles.tableCell, sdStyles.colTreatment]} numberOfLines={1}>
+      {item.seed_treatment || "-"}
+    </Text>
+    <Text style={[sdStyles.tableCell, sdStyles.colCost]} numberOfLines={1}>
+      {item.total_cost || "-"}
     </Text>
     <View style={sdStyles.tableActions}>
       <TouchableOpacity style={sdStyles.editBtn} onPress={() => onEdit(item)}>
@@ -156,20 +154,15 @@ const SeedRow = ({ item, index, onEdit, onDelete }) => (
   </View>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
 const SeedDetailsMobile = ({ getId }) => {
   const scrollRef = useRef(null);
   const formSectionRef = useRef(null);
-
   const [expanded, setExpanded] = useState(false);
   const [fieldBookId, setFieldBookId] = useState(null);
   const [seedsList, setSeedsList] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const [seedsDetails, setSeedsDetails] = useState({
     varietyName: "",
     seedQuantity: "",
@@ -187,11 +180,9 @@ const SeedDetailsMobile = ({ getId }) => {
     { label: "None", value: "None" },
   ];
 
-  // ── Fetch data ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!getId) return;
     setIsLoading(true);
-
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -203,43 +194,35 @@ const SeedDetailsMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-
           if (data.seed_detail && Array.isArray(data.seed_detail)) {
-            const formatted = data.seed_detail.map((seed, index) => ({
-              id: index,
-              variety_name: seed.variety_name || "",
-              quantity_of_seed: seed.quantity_of_seed || "",
-              seed_treatment: seed.seed_treatment || "",
-              treatment_cost: seed.treatment_cost || "",
-              cost_of_seed: seed.cost_of_seed || "",
-              total_cost: seed.total_cost || "",
-            }));
-            setSeedsList(formatted);
+            setSeedsList(
+              data.seed_detail.map((seed, index) => ({
+                id: index,
+                variety_name: seed.variety_name || "",
+                quantity_of_seed: seed.quantity_of_seed || "",
+                seed_treatment: seed.seed_treatment || "",
+                treatment_cost: seed.treatment_cost || "",
+                cost_of_seed: seed.cost_of_seed || "",
+                total_cost: seed.total_cost || "",
+              })),
+            );
           }
         })
-        .catch((err) => {
-          console.error("SeedDetailsMobile fetch error:", err);
-        })
+        .catch((err) => console.error("SeedDetailsMobile fetch error:", err))
         .finally(() => setIsLoading(false));
     });
   }, [getId]);
 
-  // ── Scroll to form when input focused ─────────────────────────────────────
   const scrollToForm = () => {
     setTimeout(() => {
       formSectionRef.current?.measureLayout(
         scrollRef.current,
-        (x, y) => {
-          scrollRef.current?.scrollTo({ y: y, animated: true });
-        },
-        () => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        },
+        (x, y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        () => scrollRef.current?.scrollToEnd({ animated: true }),
       );
     }, 150);
   };
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
     setSeedsDetails({
@@ -250,12 +233,9 @@ const SeedDetailsMobile = ({ getId }) => {
       costOfSeed: row.cost_of_seed || "",
       totalCost: row.total_cost || "",
     });
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
       "Delete Seed Detail",
@@ -280,8 +260,8 @@ const SeedDetailsMobile = ({ getId }) => {
                 )
                 .then((resp) => {
                   if (resp.data?.data?.seed_detail) {
-                    const formatted = resp.data.data.seed_detail.map(
-                      (seed, index) => ({
+                    setSeedsList(
+                      resp.data.data.seed_detail.map((seed, index) => ({
                         id: index,
                         variety_name: seed.variety_name || "",
                         quantity_of_seed: seed.quantity_of_seed || "",
@@ -289,15 +269,14 @@ const SeedDetailsMobile = ({ getId }) => {
                         treatment_cost: seed.treatment_cost || "",
                         cost_of_seed: seed.cost_of_seed || "",
                         total_cost: seed.total_cost || "",
-                      }),
+                      })),
                     );
-                    setSeedsList(formatted);
                   }
                   Alert.alert("Deleted", "Seed detail has been deleted.");
                 })
-                .catch(() => {
-                  Alert.alert("Error", "Failed to delete seed detail.");
-                });
+                .catch(() =>
+                  Alert.alert("Error", "Failed to delete seed detail."),
+                );
             });
           },
         },
@@ -305,15 +284,12 @@ const SeedDetailsMobile = ({ getId }) => {
     );
   };
 
-  // ── Save / Update ──────────────────────────────────────────────────────────
   const handleSave = () => {
     if (!seedsDetails.varietyName) {
       Alert.alert("Validation", "Please enter a variety name.");
       return;
     }
-
     setIsSaving(true);
-
     const item = {
       variety_name: seedsDetails.varietyName,
       quantity_of_seed: seedsDetails.seedQuantity,
@@ -322,12 +298,10 @@ const SeedDetailsMobile = ({ getId }) => {
       cost_of_seed: seedsDetails.costOfSeed,
       total_cost: seedsDetails.totalCost,
     };
-
     const payload =
       editingIndex !== null
         ? { operation: "update", index: editingIndex, item }
         : { operation: "append", item };
-
     getAuthToken().then((token) => {
       axios
         .patch(
@@ -347,20 +321,19 @@ const SeedDetailsMobile = ({ getId }) => {
               ? "Seed detail updated successfully!"
               : "Seed detail added successfully!",
           );
-
           if (resp.data?.data?.seed_detail) {
-            const formatted = resp.data.data.seed_detail.map((seed, index) => ({
-              id: index,
-              variety_name: seed.variety_name || "",
-              quantity_of_seed: seed.quantity_of_seed || "",
-              seed_treatment: seed.seed_treatment || "",
-              treatment_cost: seed.treatment_cost || "",
-              cost_of_seed: seed.cost_of_seed || "",
-              total_cost: seed.total_cost || "",
-            }));
-            setSeedsList(formatted);
+            setSeedsList(
+              resp.data.data.seed_detail.map((seed, index) => ({
+                id: index,
+                variety_name: seed.variety_name || "",
+                quantity_of_seed: seed.quantity_of_seed || "",
+                seed_treatment: seed.seed_treatment || "",
+                treatment_cost: seed.treatment_cost || "",
+                cost_of_seed: seed.cost_of_seed || "",
+                total_cost: seed.total_cost || "",
+              })),
+            );
           }
-
           setSeedsDetails({
             varietyName: "",
             seedQuantity: "",
@@ -371,19 +344,18 @@ const SeedDetailsMobile = ({ getId }) => {
           });
           setEditingIndex(null);
         })
-        .catch(() => {
+        .catch(() =>
           Alert.alert(
             "Error",
             editingIndex !== null
               ? "Failed to update seed detail."
               : "Failed to add seed detail.",
-          );
-        })
+          ),
+        )
         .finally(() => setIsSaving(false));
     });
   };
 
-  // ── Cancel edit ────────────────────────────────────────────────────────────
   const handleCancel = () => {
     setSeedsDetails({
       varietyName: "",
@@ -396,15 +368,12 @@ const SeedDetailsMobile = ({ getId }) => {
     setEditingIndex(null);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
-    // ✅ KeyboardAvoidingView ensures content is pushed up above keyboard
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
     >
       <View style={sdStyles.wrapper}>
-        {/* ── Accordion Header ── */}
         <TouchableOpacity
           style={sdStyles.accordionHeader}
           onPress={() => setExpanded((p) => !p)}
@@ -428,48 +397,73 @@ const SeedDetailsMobile = ({ getId }) => {
           />
         </TouchableOpacity>
 
-        {/* ── Expanded Content ── */}
         {expanded && (
           <ScrollView
             ref={scrollRef}
-            // ✅ No maxHeight cap — full list visible, no truncation
             style={sdStyles.expandedContent}
             contentContainerStyle={sdStyles.expandedContentContainer}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {/* ── Records Table — fully visible ── */}
+            {/* ── Table with horizontal scroll ── */}
             {seedsList.length > 0 && (
               <View style={sdStyles.tableWrapper}>
-                <View style={sdStyles.tableHeaderRow}>
-                  <Text style={[sdStyles.tableHeaderCell, { width: 30 }]}>
-                    #
-                  </Text>
-                  <Text style={[sdStyles.tableHeaderCell, { flex: 1 }]}>
-                    Variety
-                  </Text>
-                  <Text style={[sdStyles.tableHeaderCell, { width: 60 }]}>
-                    Qty
-                  </Text>
-                  <Text style={[sdStyles.tableHeaderCell, { width: 80 }]}>
-                    Actions
-                  </Text>
-                </View>
-                {seedsList.map((item, index) => (
-                  <SeedRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={true}
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  <View>
+                    <View style={sdStyles.tableHeaderRow}>
+                      <Text style={[sdStyles.tableHeaderCell, sdStyles.colNo]}>
+                        #
+                      </Text>
+                      <Text
+                        style={[sdStyles.tableHeaderCell, sdStyles.colVariety]}
+                      >
+                        Variety
+                      </Text>
+                      <Text style={[sdStyles.tableHeaderCell, sdStyles.colQty]}>
+                        Qty
+                      </Text>
+                      <Text
+                        style={[
+                          sdStyles.tableHeaderCell,
+                          sdStyles.colTreatment,
+                        ]}
+                      >
+                        Treatment
+                      </Text>
+                      <Text
+                        style={[sdStyles.tableHeaderCell, sdStyles.colCost]}
+                      >
+                        Total
+                      </Text>
+                      <Text
+                        style={[
+                          sdStyles.tableHeaderCell,
+                          sdStyles.tableActions,
+                        ]}
+                      >
+                        Actions
+                      </Text>
+                    </View>
+                    {seedsList.map((item, index) => (
+                      <SeedRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
-            {/* ── Form ── */}
-            {/* ✅ ref attached so we can scroll to it on input focus */}
             <View ref={formSectionRef} style={sdStyles.formSection}>
               {editingIndex !== null && (
                 <View style={sdStyles.editingBanner}>
@@ -479,8 +473,6 @@ const SeedDetailsMobile = ({ getId }) => {
                   </Text>
                 </View>
               )}
-
-              {/* Row 1 */}
               <View style={sdStyles.formRow}>
                 <View style={sdStyles.formCol}>
                   <LabeledInput
@@ -504,8 +496,6 @@ const SeedDetailsMobile = ({ getId }) => {
                   />
                 </View>
               </View>
-
-              {/* Row 2 */}
               <View style={sdStyles.formRow}>
                 <View style={sdStyles.formCol}>
                   <Text style={sdStyles.inputLabel}>Seed Treatment</Text>
@@ -530,8 +520,6 @@ const SeedDetailsMobile = ({ getId }) => {
                   />
                 </View>
               </View>
-
-              {/* Row 3 */}
               <View style={sdStyles.formRow}>
                 <View style={sdStyles.formCol}>
                   <LabeledInput
@@ -556,8 +544,6 @@ const SeedDetailsMobile = ({ getId }) => {
                   />
                 </View>
               </View>
-
-              {/* Buttons */}
               <View style={sdStyles.btnRow}>
                 {editingIndex !== null && (
                   <TouchableOpacity
@@ -594,11 +580,8 @@ const SeedDetailsMobile = ({ getId }) => {
   );
 };
 
-export default SeedDetailsMobile;
+export { SeedDetailsMobile };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STYLES
-// ─────────────────────────────────────────────────────────────────────────────
 const sdStyles = StyleSheet.create({
   wrapper: {
     backgroundColor: "#fff",
@@ -612,7 +595,6 @@ const sdStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-
   accordionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -621,11 +603,7 @@ const sdStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   leafIconWrap: {
     width: 30,
     height: 30,
@@ -652,16 +630,14 @@ const sdStyles = StyleSheet.create({
     marginLeft: 6,
   },
   badgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
-
-  // ✅ Removed maxHeight — list is now fully visible
-  expandedContent: {
-    flexGrow: 1,
-  },
-  expandedContentContainer: {
-    paddingBottom: 20,
-  },
-
-  // Table
+  expandedContent: { flexGrow: 1 },
+  expandedContentContainer: { paddingBottom: 20 },
+  // ── Column widths ──
+  colNo: { width: 28 },
+  colVariety: { width: 110 },
+  colQty: { width: 70 },
+  colTreatment: { width: 90 },
+  colCost: { width: 70 },
   tableWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
@@ -673,11 +649,7 @@ const sdStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  tableHeaderCell: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#4E4E4E",
-  },
+  tableHeaderCell: { fontSize: 11, fontWeight: "700", color: "#4E4E4E" },
   tableRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -687,28 +659,15 @@ const sdStyles = StyleSheet.create({
     borderBottomColor: "#F5F5F5",
   },
   tableRowEven: { backgroundColor: "#FAFAFA" },
-  tableCell: {
-    fontSize: 12,
-    color: "#383838",
-  },
+  tableCell: { fontSize: 12, color: "#383838" },
   tableActions: {
     width: 80,
     flexDirection: "row",
     gap: 6,
     justifyContent: "flex-end",
   },
-  editBtn: {
-    backgroundColor: "#3B82F6",
-    borderRadius: 5,
-    padding: 5,
-  },
-  deleteBtn: {
-    backgroundColor: "#EF4444",
-    borderRadius: 5,
-    padding: 5,
-  },
-
-  // Form
+  editBtn: { backgroundColor: "#3B82F6", borderRadius: 5, padding: 5 },
+  deleteBtn: { backgroundColor: "#EF4444", borderRadius: 5, padding: 5 },
   formSection: { backgroundColor: "#F5F5F5", padding: 14 },
   editingBanner: {
     flexDirection: "row",
@@ -722,19 +681,9 @@ const sdStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#86EFAC",
   },
-  editingBannerText: {
-    fontSize: 12,
-    color: "#15803D",
-    fontWeight: "600",
-  },
-
-  formRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-  },
+  editingBannerText: { fontSize: 12, color: "#15803D", fontWeight: "600" },
+  formRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
   formCol: { flex: 1 },
-
   inputGroup: { marginBottom: 0 },
   inputLabel: {
     fontSize: 12,
@@ -752,7 +701,6 @@ const sdStyles = StyleSheet.create({
     fontSize: 12,
     color: "#383838",
   },
-
   dropdown: {
     flexDirection: "row",
     alignItems: "center",
@@ -764,13 +712,7 @@ const sdStyles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  dropdownText: {
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-    marginRight: 4,
-  },
-
+  dropdownText: { fontSize: 12, fontWeight: "500", flex: 1, marginRight: 4 },
   btnRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -793,7 +735,6 @@ const sdStyles = StyleSheet.create({
     alignItems: "center",
   },
   cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -840,3 +781,5 @@ const sdStyles = StyleSheet.create({
     fontSize: 13,
   },
 });
+
+export default SeedDetailsMobile;

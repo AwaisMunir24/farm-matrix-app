@@ -16,53 +16,54 @@ import axios from "axios";
 import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LABELED INPUT
+// ─────────────────────────────────────────────────────────────────────────────
 const LabeledInput = ({
   label,
   value,
   onChangeText,
   keyboardType = "default",
-  onFocus,
+  multiline = false,
 }) => (
   <View>
-    <Text style={lpStyles.inputLabel}>{label}</Text>
+    <Text style={advStyles.inputLabel}>{label}</Text>
     <TextInput
-      style={lpStyles.textInput}
+      style={[advStyles.textInput, multiline && advStyles.textInputMultiline]}
       value={value}
       onChangeText={onChangeText}
       placeholder={label}
       placeholderTextColor="#A9A9A9"
       keyboardType={keyboardType}
-      onFocus={onFocus}
+      multiline={multiline}
+      textAlignVertical={multiline ? "top" : "center"}
     />
   </View>
 );
 
-const LandPrepRow = ({ item, index, onEdit, onDelete }) => (
-  <View style={[lpStyles.tableRow, index % 2 === 0 && lpStyles.tableRowEven]}>
-    <Text style={[lpStyles.tableCell, lpStyles.colNo]}>{index + 1}</Text>
-    <Text style={[lpStyles.tableCell, lpStyles.colDate]} numberOfLines={1}>
-      {item.application_date
-        ? item.application_date.split("-").reverse().join("-")
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE ROW
+// ─────────────────────────────────────────────────────────────────────────────
+const AdvisoryRow = ({ item, index, onEdit, onDelete }) => (
+  <View style={[advStyles.tableRow, index % 2 === 0 && advStyles.tableRowEven]}>
+    <Text style={[advStyles.tableCell, advStyles.colNo]}>{index + 1}</Text>
+    <Text style={[advStyles.tableCell, advStyles.colDate]} numberOfLines={1}>
+      {item.advisory_date
+        ? item.advisory_date.split("-").reverse().join("-")
         : "-"}
     </Text>
-    <Text style={[lpStyles.tableCell, lpStyles.colEquip]} numberOfLines={1}>
-      {item.equipment_used || "-"}
+    <Text style={[advStyles.tableCell, advStyles.colType]} numberOfLines={1}>
+      {item.advisory_type || "-"}
     </Text>
-    <Text style={[lpStyles.tableCell, lpStyles.colCost]} numberOfLines={1}>
-      {item.diesel_petrol_cost || "-"}
+    <Text style={[advStyles.tableCell, advStyles.colDetails]} numberOfLines={1}>
+      {item.advisory_details || "-"}
     </Text>
-    <Text style={[lpStyles.tableCell, lpStyles.colCost]} numberOfLines={1}>
-      {item.labour_cost || "-"}
-    </Text>
-    <Text style={[lpStyles.tableCell, lpStyles.colCost]} numberOfLines={1}>
-      {item.total_cost || "-"}
-    </Text>
-    <View style={lpStyles.tableActions}>
-      <TouchableOpacity style={lpStyles.editBtn} onPress={() => onEdit(item)}>
+    <View style={advStyles.tableActions}>
+      <TouchableOpacity style={advStyles.editBtn} onPress={() => onEdit(item)}>
         <Feather name="edit-2" size={12} color="#fff" />
       </TouchableOpacity>
       <TouchableOpacity
-        style={lpStyles.deleteBtn}
+        style={advStyles.deleteBtn}
         onPress={() => onDelete(item)}
       >
         <Feather name="trash-2" size={12} color="#fff" />
@@ -71,29 +72,28 @@ const LandPrepRow = ({ item, index, onEdit, onDelete }) => (
   </View>
 );
 
-const LandPreparationMobile = ({ getId }) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+const AdvisoryMobile = ({ getId }) => {
   const scrollRef = useRef(null);
-  const formSectionRef = useRef(null);
   const [expanded, setExpanded] = useState(false);
   const [fieldBookId, setFieldBookId] = useState(null);
-  const [landPrepList, setLandPrepList] = useState([]);
+  const [advisoryList, setAdvisoryList] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [landPrepData, setLandPrepData] = useState({
-    applicationDate: "",
-    equipmentUsed: "",
-    dieselCost: "",
-    laborCost: "",
-    costOfSeed: "",
-    totalCost: "",
+
+  const [advisory, setAdvisory] = useState({
+    advisoryDate: "",
+    advisoryType: "",
+    advisoryDetails: "",
   });
 
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!getId) return;
-    setIsLoading(true);
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -105,40 +105,23 @@ const LandPreparationMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-          if (
-            data.preparation_of_land &&
-            Array.isArray(data.preparation_of_land)
-          ) {
-            setLandPrepList(
-              data.preparation_of_land.map((item, index) => ({
+          if (data.advisory && Array.isArray(data.advisory)) {
+            setAdvisoryList(
+              data.advisory.map((item, index) => ({
                 id: index,
-                application_date: item.application_date || "",
-                equipment_used: item.equipment_used || "",
-                diesel_petrol_cost: item.diesel_petrol_cost || "",
-                labour_cost: item.labour_cost || "",
-                cost_of_seed: item.cost_of_seed || "",
-                total_cost: item.total_cost || "",
+                advisory_date: item.advisory_date || "",
+                advisory_type: item.advisory_type || "",
+                advisory_details: item.advisory_details || "",
+                total_cost: item.total_cost || 0,
               })),
             );
           }
         })
-        .catch((err) =>
-          console.error("LandPreparationMobile fetch error:", err),
-        )
-        .finally(() => setIsLoading(false));
+        .catch((err) => console.error("AdvisoryMobile fetch error:", err));
     });
   }, [getId]);
 
-  const scrollToForm = () => {
-    setTimeout(() => {
-      formSectionRef.current?.measureLayout(
-        scrollRef.current,
-        (x, y) => scrollRef.current?.scrollTo({ y, animated: true }),
-        () => scrollRef.current?.scrollToEnd({ animated: true }),
-      );
-    }, 150);
-  };
-
+  // ── Date picker ────────────────────────────────────────────────────────────
   const onDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === "ios");
     if (date) {
@@ -146,10 +129,7 @@ const LandPreparationMobile = ({ getId }) => {
       const yyyy = date.getFullYear();
       const mm = String(date.getMonth() + 1).padStart(2, "0");
       const dd = String(date.getDate()).padStart(2, "0");
-      setLandPrepData((p) => ({
-        ...p,
-        applicationDate: `${yyyy}-${mm}-${dd}`,
-      }));
+      setAdvisory((p) => ({ ...p, advisoryDate: `${yyyy}-${mm}-${dd}` }));
     }
   };
 
@@ -158,28 +138,27 @@ const LandPreparationMobile = ({ getId }) => {
     return `${String(date.getDate()).padStart(2, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
   };
 
+  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
-    if (row.application_date) {
-      const parts = row.application_date.split("-");
+    if (row.advisory_date) {
+      const parts = row.advisory_date.split("-");
       if (parts.length === 3)
         setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
     }
-    setLandPrepData({
-      applicationDate: row.application_date || "",
-      equipmentUsed: row.equipment_used || "",
-      dieselCost: row.diesel_petrol_cost || "",
-      laborCost: row.labour_cost || "",
-      costOfSeed: row.cost_of_seed || "",
-      totalCost: row.total_cost || "",
+    setAdvisory({
+      advisoryDate: row.advisory_date || "",
+      advisoryType: row.advisory_type || "",
+      advisoryDetails: row.advisory_details || "",
     });
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
-      "Delete Record",
-      "Are you sure you want to delete this land preparation record?",
+      "Delete Advisory",
+      "Are you sure you want to delete this advisory?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -189,7 +168,7 @@ const LandPreparationMobile = ({ getId }) => {
             getAuthToken().then((token) => {
               axios
                 .patch(
-                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/preparation_of_land`,
+                  `${SERVER_URL}/api/fieldbook/${fieldBookId}/advisory`,
                   { operation: "delete", index: row.id },
                   {
                     headers: {
@@ -199,22 +178,22 @@ const LandPreparationMobile = ({ getId }) => {
                   },
                 )
                 .then((resp) => {
-                  if (resp.data?.data?.preparation_of_land) {
-                    setLandPrepList(
-                      resp.data.data.preparation_of_land.map((item, index) => ({
+                  if (resp.data?.data?.advisory) {
+                    setAdvisoryList(
+                      resp.data.data.advisory.map((item, index) => ({
                         id: index,
-                        application_date: item.application_date || "",
-                        equipment_used: item.equipment_used || "",
-                        diesel_petrol_cost: item.diesel_petrol_cost || "",
-                        labour_cost: item.labour_cost || "",
-                        cost_of_seed: item.cost_of_seed || "",
-                        total_cost: item.total_cost || "",
+                        advisory_date: item.advisory_date || "",
+                        advisory_type: item.advisory_type || "",
+                        advisory_details: item.advisory_details || "",
+                        total_cost: item.total_cost || 0,
                       })),
                     );
                   }
-                  Alert.alert("Deleted", "Land preparation record deleted.");
+                  Alert.alert("Deleted", "Advisory deleted.");
                 })
-                .catch(() => Alert.alert("Error", "Failed to delete record."));
+                .catch(() =>
+                  Alert.alert("Error", "Failed to delete advisory."),
+                );
             });
           },
         },
@@ -222,104 +201,90 @@ const LandPreparationMobile = ({ getId }) => {
     );
   };
 
+  // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = () => {
-    if (!landPrepData.applicationDate) {
-      Alert.alert("Validation", "Please select an application date.");
+    if (!advisory.advisoryDate) {
+      Alert.alert("Validation", "Please select an advisory date.");
       return;
     }
     setIsSaving(true);
+
     const item = {
-      application_date: landPrepData.applicationDate,
-      equipment_used: landPrepData.equipmentUsed,
-      diesel_petrol_cost: landPrepData.dieselCost,
-      labour_cost: landPrepData.laborCost,
-      cost_of_seed: landPrepData.costOfSeed,
-      total_cost: landPrepData.totalCost,
+      advisory_date: advisory.advisoryDate,
+      advisory_type: advisory.advisoryType,
+      advisory_details: advisory.advisoryDetails,
+      total_cost: 0,
     };
+
     const payload =
       editingIndex !== null
         ? { operation: "update", index: editingIndex, item }
         : { operation: "append", item };
+
     getAuthToken().then((token) => {
       axios
-        .patch(
-          `${SERVER_URL}/api/fieldbook/${fieldBookId}/preparation_of_land`,
-          payload,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "x-auth-token": token,
-            },
+        .patch(`${SERVER_URL}/api/fieldbook/${fieldBookId}/advisory`, payload, {
+          headers: {
+            "Content-Type": "application/json",
+            "x-auth-token": token,
           },
-        )
+        })
         .then((resp) => {
           Alert.alert(
             "Success",
-            editingIndex !== null ? "Record updated!" : "Record added!",
+            editingIndex !== null ? "Advisory updated!" : "Advisory added!",
           );
-          if (resp.data?.data?.preparation_of_land) {
-            setLandPrepList(
-              resp.data.data.preparation_of_land.map((item, index) => ({
+          if (resp.data?.data?.advisory) {
+            setAdvisoryList(
+              resp.data.data.advisory.map((item, index) => ({
                 id: index,
-                application_date: item.application_date || "",
-                equipment_used: item.equipment_used || "",
-                diesel_petrol_cost: item.diesel_petrol_cost || "",
-                labour_cost: item.labour_cost || "",
-                cost_of_seed: item.cost_of_seed || "",
-                total_cost: item.total_cost || "",
+                advisory_date: item.advisory_date || "",
+                advisory_type: item.advisory_type || "",
+                advisory_details: item.advisory_details || "",
+                total_cost: item.total_cost || 0,
               })),
             );
           }
-          setLandPrepData({
-            applicationDate: "",
-            equipmentUsed: "",
-            dieselCost: "",
-            laborCost: "",
-            costOfSeed: "",
-            totalCost: "",
+          setAdvisory({
+            advisoryDate: "",
+            advisoryType: "",
+            advisoryDetails: "",
           });
           setSelectedDate(null);
           setEditingIndex(null);
         })
-        .catch(() =>
-          Alert.alert("Error", "Failed to save land preparation record."),
-        )
+        .catch(() => Alert.alert("Error", "Failed to save advisory."))
         .finally(() => setIsSaving(false));
     });
   };
 
   const handleCancel = () => {
-    setLandPrepData({
-      applicationDate: "",
-      equipmentUsed: "",
-      dieselCost: "",
-      laborCost: "",
-      costOfSeed: "",
-      totalCost: "",
-    });
+    setAdvisory({ advisoryDate: "", advisoryType: "", advisoryDetails: "" });
     setSelectedDate(null);
     setEditingIndex(null);
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={lpStyles.wrapper}>
+      <View style={advStyles.wrapper}>
+        {/* Accordion Header */}
         <TouchableOpacity
-          style={lpStyles.accordionHeader}
+          style={advStyles.accordionHeader}
           onPress={() => setExpanded((p) => !p)}
           activeOpacity={0.8}
         >
-          <View style={lpStyles.headerLeft}>
-            <View style={lpStyles.iconWrap}>
-              <Text style={lpStyles.iconEmoji}>🚜</Text>
+          <View style={advStyles.headerLeft}>
+            <View style={advStyles.iconWrap}>
+              <Text style={advStyles.iconEmoji}>📋</Text>
             </View>
-            <Text style={lpStyles.accordionTitle}>Land Preparation</Text>
-            {landPrepList.length > 0 && (
-              <View style={lpStyles.badge}>
-                <Text style={lpStyles.badgeText}>{landPrepList.length}</Text>
+            <Text style={advStyles.accordionTitle}>Advisory</Text>
+            {advisoryList.length > 0 && (
+              <View style={advStyles.badge}>
+                <Text style={advStyles.badgeText}>{advisoryList.length}</Text>
               </View>
             )}
           </View>
@@ -333,15 +298,14 @@ const LandPreparationMobile = ({ getId }) => {
         {expanded && (
           <ScrollView
             ref={scrollRef}
-            style={lpStyles.expandedContent}
-            contentContainerStyle={lpStyles.expandedContentContainer}
+            style={advStyles.expandedContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
             {/* ── Table with horizontal scroll ── */}
-            {landPrepList.length > 0 && (
-              <View style={lpStyles.tableWrapper}>
+            {advisoryList.length > 0 && (
+              <View style={advStyles.tableWrapper}>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={true}
@@ -349,46 +313,43 @@ const LandPreparationMobile = ({ getId }) => {
                   nestedScrollEnabled={true}
                 >
                   <View>
-                    <View style={lpStyles.tableHeaderRow}>
-                      <Text style={[lpStyles.tableHeaderCell, lpStyles.colNo]}>
+                    {/* Header */}
+                    <View style={advStyles.tableHeaderRow}>
+                      <Text
+                        style={[advStyles.tableHeaderCell, advStyles.colNo]}
+                      >
                         #
                       </Text>
                       <Text
-                        style={[lpStyles.tableHeaderCell, lpStyles.colDate]}
+                        style={[advStyles.tableHeaderCell, advStyles.colDate]}
                       >
                         Date
                       </Text>
                       <Text
-                        style={[lpStyles.tableHeaderCell, lpStyles.colEquip]}
+                        style={[advStyles.tableHeaderCell, advStyles.colType]}
                       >
-                        Equipment
-                      </Text>
-                      <Text
-                        style={[lpStyles.tableHeaderCell, lpStyles.colCost]}
-                      >
-                        Diesel
-                      </Text>
-                      <Text
-                        style={[lpStyles.tableHeaderCell, lpStyles.colCost]}
-                      >
-                        Labour
-                      </Text>
-                      <Text
-                        style={[lpStyles.tableHeaderCell, lpStyles.colCost]}
-                      >
-                        Total
+                        Type
                       </Text>
                       <Text
                         style={[
-                          lpStyles.tableHeaderCell,
-                          lpStyles.tableActions,
+                          advStyles.tableHeaderCell,
+                          advStyles.colDetails,
+                        ]}
+                      >
+                        Details
+                      </Text>
+                      <Text
+                        style={[
+                          advStyles.tableHeaderCell,
+                          advStyles.tableActions,
                         ]}
                       >
                         Actions
                       </Text>
                     </View>
-                    {landPrepList.map((item, index) => (
-                      <LandPrepRow
+                    {/* Rows */}
+                    {advisoryList.map((item, index) => (
+                      <AdvisoryRow
                         key={item.id}
                         item={item}
                         index={index}
@@ -401,30 +362,29 @@ const LandPreparationMobile = ({ getId }) => {
               </View>
             )}
 
-            <View ref={formSectionRef} style={lpStyles.formSection}>
+            {/* Form */}
+            <View style={advStyles.formSection}>
               {editingIndex !== null && (
-                <View style={lpStyles.editingBanner}>
+                <View style={advStyles.editingBanner}>
                   <Feather name="edit-2" size={13} color="#15803D" />
-                  <Text style={lpStyles.editingBannerText}>
+                  <Text style={advStyles.editingBannerText}>
                     Editing record #{editingIndex + 1}
                   </Text>
                 </View>
               )}
 
-              <View style={lpStyles.formRow}>
-                <View style={lpStyles.formCol}>
-                  <Text style={lpStyles.inputLabel}>Application Date</Text>
+              {/* Row 1: Date + Type */}
+              <View style={advStyles.formRow}>
+                <View style={advStyles.formCol}>
+                  <Text style={advStyles.inputLabel}>Advisory Date</Text>
                   <TouchableOpacity
-                    style={lpStyles.dateInput}
-                    onPress={() => {
-                      setShowDatePicker(true);
-                      scrollToForm();
-                    }}
+                    style={advStyles.dateInput}
+                    onPress={() => setShowDatePicker(true)}
                     activeOpacity={0.8}
                   >
                     <Text
                       style={[
-                        lpStyles.dateInputText,
+                        advStyles.dateInputText,
                         { color: selectedDate ? "#383838" : "#A9A9A9" },
                       ]}
                     >
@@ -443,88 +403,50 @@ const LandPreparationMobile = ({ getId }) => {
                     />
                   )}
                 </View>
-                <View style={lpStyles.formCol}>
+                <View style={advStyles.formCol}>
                   <LabeledInput
-                    label="Equipment Used"
-                    value={landPrepData.equipmentUsed}
+                    label="Advisory Type"
+                    value={advisory.advisoryType}
                     onChangeText={(v) =>
-                      setLandPrepData((p) => ({ ...p, equipmentUsed: v }))
+                      setAdvisory((p) => ({ ...p, advisoryType: v }))
                     }
-                    onFocus={scrollToForm}
                   />
                 </View>
               </View>
 
-              <View style={lpStyles.formRow}>
-                <View style={lpStyles.formCol}>
-                  <LabeledInput
-                    label="Diesel/Petrol Cost"
-                    value={landPrepData.dieselCost}
-                    onChangeText={(v) =>
-                      setLandPrepData((p) => ({ ...p, dieselCost: v }))
-                    }
-                    keyboardType="numeric"
-                    onFocus={scrollToForm}
-                  />
-                </View>
-                <View style={lpStyles.formCol}>
-                  <LabeledInput
-                    label="Labor Cost"
-                    value={landPrepData.laborCost}
-                    onChangeText={(v) =>
-                      setLandPrepData((p) => ({ ...p, laborCost: v }))
-                    }
-                    keyboardType="numeric"
-                    onFocus={scrollToForm}
-                  />
-                </View>
+              {/* Advisory Details (full width multiline) */}
+              <View style={advStyles.formFullRow}>
+                <LabeledInput
+                  label="Advisory Details"
+                  value={advisory.advisoryDetails}
+                  onChangeText={(v) =>
+                    setAdvisory((p) => ({ ...p, advisoryDetails: v }))
+                  }
+                  multiline={true}
+                />
               </View>
 
-              <View style={lpStyles.formRow}>
-                <View style={lpStyles.formCol}>
-                  <LabeledInput
-                    label="Cost of Seed"
-                    value={landPrepData.costOfSeed}
-                    onChangeText={(v) =>
-                      setLandPrepData((p) => ({ ...p, costOfSeed: v }))
-                    }
-                    keyboardType="numeric"
-                    onFocus={scrollToForm}
-                  />
-                </View>
-                <View style={lpStyles.formCol}>
-                  <LabeledInput
-                    label="Total Cost"
-                    value={landPrepData.totalCost}
-                    onChangeText={(v) =>
-                      setLandPrepData((p) => ({ ...p, totalCost: v }))
-                    }
-                    keyboardType="numeric"
-                    onFocus={scrollToForm}
-                  />
-                </View>
-              </View>
-
-              <View style={lpStyles.btnRow}>
+              {/* Buttons */}
+              <View style={advStyles.btnRow}>
                 {editingIndex !== null && (
                   <TouchableOpacity
-                    style={lpStyles.cancelBtn}
+                    style={advStyles.cancelBtn}
                     onPress={handleCancel}
                     activeOpacity={0.8}
                   >
-                    <Text style={lpStyles.cancelBtnText}>Cancel</Text>
+                    <Text style={advStyles.cancelBtnText}>Cancel</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   style={[
-                    lpStyles.saveBtn,
+                    advStyles.saveBtn,
                     editingIndex !== null && { backgroundColor: "#2563EB" },
                   ]}
                   onPress={handleSave}
                   disabled={isSaving}
                   activeOpacity={0.85}
                 >
-                  <Text style={lpStyles.saveBtnText}>
+                  <Text style={advStyles.saveBtnText}>
                     {isSaving
                       ? "Saving…"
                       : editingIndex !== null
@@ -541,9 +463,12 @@ const LandPreparationMobile = ({ getId }) => {
   );
 };
 
-export default LandPreparationMobile;
+export default AdvisoryMobile;
 
-const lpStyles = StyleSheet.create({
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLES
+// ─────────────────────────────────────────────────────────────────────────────
+const advStyles = StyleSheet.create({
   wrapper: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -591,13 +516,12 @@ const lpStyles = StyleSheet.create({
     marginLeft: 6,
   },
   badgeText: { fontSize: 11, color: "#fff", fontWeight: "700" },
-  expandedContent: { flexGrow: 1 },
-  expandedContentContainer: { paddingBottom: 20 },
+  expandedContent: { maxHeight: 500 },
   // ── Column widths ──
   colNo: { width: 28 },
   colDate: { width: 100 },
-  colEquip: { width: 90 },
-  colCost: { width: 70 },
+  colType: { width: 90 },
+  colDetails: { width: 120 },
   tableWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
@@ -643,6 +567,7 @@ const lpStyles = StyleSheet.create({
   },
   editingBannerText: { fontSize: 12, color: "#15803D", fontWeight: "600" },
   formRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  formFullRow: { marginBottom: 10 },
   formCol: { flex: 1 },
   inputLabel: {
     fontSize: 12,
@@ -660,6 +585,7 @@ const lpStyles = StyleSheet.create({
     fontSize: 12,
     color: "#383838",
   },
+  textInputMultiline: { minHeight: 70, textAlignVertical: "top" },
   dateInput: {
     flexDirection: "row",
     alignItems: "center",

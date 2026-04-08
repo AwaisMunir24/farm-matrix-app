@@ -28,6 +28,11 @@ import LandPreparationMobile from "./Landpreperationmobile";
 import WeedManagementMobile from "./Weedmanagmentmobile";
 import IrrigationMobile from "./Irrigationmobile";
 import SowingMobile from "./Sowingmobile";
+import FertilizerMobile from "./Fertilizermobile";
+import PestDiseaseMobile from "./Pestdiseasemobile";
+import IssueReportedMobile from "./Issuereportedmobile";
+import AdvisoryMobile from "./Advisorymobile";
+import HarvestingMobile from "./Harvestingmobile";
 // ─────────────────────────────────────────────────────────────────────────────
 // SIMPLE DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,9 +274,10 @@ const FieldBookDetails = ({ navigation, route }) => {
             "x-auth-token": token,
           },
         })
-        .then(() => {
+        .then((resp) => {
+          console.log("✅ Field visit saved successfully:", resp.data); // ✅ log added
           Alert.alert("Success", "Field visit saved successfully!");
-          // Reset form — same as web
+
           setFormData({ date: "", farmingActivity: "", comment: "" });
           setSelectedDate(null);
           setSelectedFile(null);
@@ -529,6 +535,11 @@ const FieldBookDetails = ({ navigation, route }) => {
           <SowingMobile getId={fieldId} />
           <WeedManagementMobile getId={fieldId} />
           <IrrigationMobile getId={fieldId} />
+          <FertilizerMobile getId={fieldId} />
+          <PestDiseaseMobile getId={fieldId} />
+          <IssueReportedMobile getId={fieldId} />
+          <AdvisoryMobile getId={fieldId} />
+          <HarvestingMobile getId={fieldId} />
         </ScrollView>
       )}
     </SafeAreaView>

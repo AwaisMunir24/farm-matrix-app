@@ -18,6 +18,11 @@ import LandPreparationMobile from "../screens/Landpreperationmobile";
 import SowingMobile from "../screens/Sowingmobile";
 import WeedManagementMobile from "../screens/Weedmanagmentmobile";
 import IrrigationMobile from "../screens/Irrigationmobile";
+import FertilizerMobile from "../screens/Fertilizermobile";
+import PestDiseaseMobile from "../screens/Pestdiseasemobile";
+import IssueReportedMobile from "../screens/Issuereportedmobile";
+import AdvisoryMobile from "../screens/Advisorymobile";
+import HarvestingMobile from "../screens/Harvestingmobile";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = () => {
@@ -38,6 +43,14 @@ const TabNavigator = () => {
       <Stack.Screen name="SeedDetailsMobile" component={SeedDetailsMobile} />
       <Stack.Screen name="SowingMobile" component={SowingMobile} />
       <Stack.Screen name="IrrigationMobile" component={IrrigationMobile} />
+      <Stack.Screen name="FertilizerMobile" component={FertilizerMobile} />
+      <Stack.Screen name="PestDiseaseMobile" component={PestDiseaseMobile} />
+      <Stack.Screen name="AdvisoryMobile" component={AdvisoryMobile} />
+      <Stack.Screen name="HarvestingMobile" component={HarvestingMobile} />
+      <Stack.Screen
+        name="IssueReportedMobile"
+        component={IssueReportedMobile}
+      />
       <Stack.Screen
         name="WeedManagementMobile"
         component={WeedManagementMobile}
