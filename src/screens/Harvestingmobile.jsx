@@ -108,6 +108,33 @@ const HarvestingTypePicker = ({ value, onChange }) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// LABELED INPUT  — defined at MODULE level so it never remounts on re-render
+// ─────────────────────────────────────────────────────────────────────────────
+const LabeledInput = ({
+  label,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  onFocus,
+  inputRef,
+}) => (
+  <View>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput
+      ref={inputRef}
+      style={styles.textInput}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={label}
+      placeholderTextColor="#A9A9A9"
+      keyboardType={keyboardType}
+      onFocus={onFocus}
+      blurOnSubmit={false}
+    />
+  </View>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TABLE ROW
 // ─────────────────────────────────────────────────────────────────────────────
 const HarvestingRow = ({ item, index, onEdit, onDelete }) => (
@@ -152,9 +179,7 @@ const HarvestingMobile = ({ getId }) => {
   const scrollRef = useRef(null);
   const formSectionRef = useRef(null);
 
-  // ✅ FIX: inputRefs must be a plain object of individual useRef() calls,
-  //         NOT nested under .current — otherwise ref={inputRefs.current[key]}
-  //         is undefined and crashes on focus, which closes the keyboard.
+  // Refs at module level — plain object of individual useRef() calls
   const inputRefs = {
     estimatedHarvest: useRef(null),
     actualHarvesting: useRef(null),
@@ -230,12 +255,10 @@ const HarvestingMobile = ({ getId }) => {
     }, 150);
   };
 
-  // ✅ FIX: scrollToInput now correctly accesses inputRefs[key] (not inputRefs.current[key])
   const scrollToInput = (key) => {
     setTimeout(() => {
       const ref = inputRefs[key];
       if (!ref?.current || !scrollRef?.current) return;
-
       ref.current.measureLayout(
         scrollRef.current,
         (x, y) => {
@@ -395,25 +418,6 @@ const HarvestingMobile = ({ getId }) => {
     setEditingIndex(null);
   };
 
-  // ── Field helper ───────────────────────────────────────────────────────────
-  // ✅ FIX: ref={inputRefs[refKey]} instead of the broken setInputRef(refKey)
-  const Field = ({ label, stateKey, keyboardType = "default", refKey }) => (
-    <View>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput
-        ref={inputRefs[refKey]}
-        style={styles.textInput}
-        value={harvesting[stateKey]}
-        onChangeText={(v) => setHarvesting((p) => ({ ...p, [stateKey]: v }))}
-        placeholder={label}
-        placeholderTextColor="#A9A9A9"
-        keyboardType={keyboardType}
-        onFocus={() => scrollToInput(refKey)}
-        blurOnSubmit={false}
-      />
-    </View>
-  );
-
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
@@ -525,17 +529,25 @@ const HarvestingMobile = ({ getId }) => {
               {/* Row 1 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Estimated Harvest"
-                    stateKey="estimatedHarvest"
-                    refKey="estimatedHarvest"
+                    value={harvesting.estimatedHarvest}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, estimatedHarvest: v }))
+                    }
+                    inputRef={inputRefs.estimatedHarvest}
+                    onFocus={() => scrollToInput("estimatedHarvest")}
                   />
                 </View>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Actual Harvest"
-                    stateKey="actualHarvesting"
-                    refKey="actualHarvesting"
+                    value={harvesting.actualHarvesting}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, actualHarvesting: v }))
+                    }
+                    inputRef={inputRefs.actualHarvesting}
+                    onFocus={() => scrollToInput("actualHarvesting")}
                   />
                 </View>
               </View>
@@ -543,18 +555,26 @@ const HarvestingMobile = ({ getId }) => {
               {/* Row 2 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Yield Cost/Mound"
-                    stateKey="yeildCostPerMound"
+                    value={harvesting.yeildCostPerMound}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, yeildCostPerMound: v }))
+                    }
                     keyboardType="numeric"
-                    refKey="yeildCostPerMound"
+                    inputRef={inputRefs.yeildCostPerMound}
+                    onFocus={() => scrollToInput("yeildCostPerMound")}
                   />
                 </View>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Advisory Details"
-                    stateKey="advisoryDetail"
-                    refKey="advisoryDetail"
+                    value={harvesting.advisoryDetail}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, advisoryDetail: v }))
+                    }
+                    inputRef={inputRefs.advisoryDetail}
+                    onFocus={() => scrollToInput("advisoryDetail")}
                   />
                 </View>
               </View>
@@ -575,19 +595,27 @@ const HarvestingMobile = ({ getId }) => {
               {/* Row 4 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Diesel Cost"
-                    stateKey="dieselCost"
+                    value={harvesting.dieselCost}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, dieselCost: v }))
+                    }
                     keyboardType="numeric"
-                    refKey="dieselCost"
+                    inputRef={inputRefs.dieselCost}
+                    onFocus={() => scrollToInput("dieselCost")}
                   />
                 </View>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Labour Cost"
-                    stateKey="labourCost"
+                    value={harvesting.labourCost}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, labourCost: v }))
+                    }
                     keyboardType="numeric"
-                    refKey="labourCost"
+                    inputRef={inputRefs.labourCost}
+                    onFocus={() => scrollToInput("labourCost")}
                   />
                 </View>
               </View>
@@ -595,11 +623,15 @@ const HarvestingMobile = ({ getId }) => {
               {/* Row 5 */}
               <View style={styles.formRow}>
                 <View style={styles.formCol}>
-                  <Field
+                  <LabeledInput
                     label="Total Cost"
-                    stateKey="totalCost"
+                    value={harvesting.totalCost}
+                    onChangeText={(v) =>
+                      setHarvesting((p) => ({ ...p, totalCost: v }))
+                    }
                     keyboardType="numeric"
-                    refKey="totalCost"
+                    inputRef={inputRefs.totalCost}
+                    onFocus={() => scrollToInput("totalCost")}
                   />
                 </View>
                 <View style={styles.formCol} />

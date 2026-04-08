@@ -133,15 +133,33 @@ const LabeledInput = ({
 const PestRow = ({ item, index, onEdit, onDelete }) => (
   <View style={[pdStyles.tableRow, index % 2 === 0 && pdStyles.tableRowEven]}>
     <Text style={[pdStyles.tableCell, { width: 28 }]}>{index + 1}</Text>
-    <Text style={[pdStyles.tableCell, { flex: 1 }]} numberOfLines={1}>
+    <Text style={[pdStyles.tableCell, { width: 90 }]} numberOfLines={1}>
       {item.application_date
         ? item.application_date.split("-").reverse().join("-")
         : "-"}
     </Text>
-    <Text style={[pdStyles.tableCell, { width: 60 }]} numberOfLines={1}>
+    <Text style={[pdStyles.tableCell, { width: 80 }]} numberOfLines={1}>
+      {item.application_type || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 90 }]} numberOfLines={1}>
       {item.pesticide_type || "-"}
     </Text>
-    <Text style={[pdStyles.tableCell, { width: 50 }]} numberOfLines={1}>
+    <Text style={[pdStyles.tableCell, { width: 60 }]} numberOfLines={1}>
+      {item.quantity_type || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 60 }]} numberOfLines={1}>
+      {item.kg || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.pesticide_price || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 65 }]} numberOfLines={1}>
+      {item.diesel_cost || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 65 }]} numberOfLines={1}>
+      {item.labour_cost || "-"}
+    </Text>
+    <Text style={[pdStyles.tableCell, { width: 65 }]} numberOfLines={1}>
       {item.total_cost || "-"}
     </Text>
     <View style={pdStyles.tableActions}>
@@ -458,35 +476,64 @@ const PestDiseaseMobile = ({ getId }) => {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {/* Table */}
+            {/* Table with horizontal scroll */}
             {pestList.length > 0 && (
               <View style={pdStyles.tableWrapper}>
-                <View style={pdStyles.tableHeaderRow}>
-                  <Text style={[pdStyles.tableHeaderCell, { width: 28 }]}>
-                    #
-                  </Text>
-                  <Text style={[pdStyles.tableHeaderCell, { flex: 1 }]}>
-                    Date
-                  </Text>
-                  <Text style={[pdStyles.tableHeaderCell, { width: 60 }]}>
-                    Pesticide
-                  </Text>
-                  <Text style={[pdStyles.tableHeaderCell, { width: 50 }]}>
-                    Total
-                  </Text>
-                  <Text style={[pdStyles.tableHeaderCell, { width: 80 }]}>
-                    Actions
-                  </Text>
-                </View>
-                {pestList.map((item, index) => (
-                  <PestRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={true}
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  <View>
+                    {/* Header */}
+                    <View style={pdStyles.tableHeaderRow}>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 28 }]}>
+                        #
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 90 }]}>
+                        Date
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 80 }]}>
+                        App. Type
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 90 }]}>
+                        Pesticide
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 60 }]}>
+                        Qty Type
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 60 }]}>
+                        Qty
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 70 }]}>
+                        Price
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 65 }]}>
+                        Diesel
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 65 }]}>
+                        Labour
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 65 }]}>
+                        Total
+                      </Text>
+                      <Text style={[pdStyles.tableHeaderCell, { width: 80 }]}>
+                        Actions
+                      </Text>
+                    </View>
+                    {/* Rows */}
+                    {pestList.map((item, index) => (
+                      <PestRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 

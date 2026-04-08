@@ -46,13 +46,25 @@ const LabeledInput = ({
 const WeedRow = ({ item, index, onEdit, onDelete }) => (
   <View style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]}>
     <Text style={[styles.tableCell, { width: 30 }]}>{index + 1}</Text>
-    <Text style={[styles.tableCell, { flex: 1 }]}>
+    <Text style={[styles.tableCell, { width: 90 }]} numberOfLines={1}>
       {item.application_date
         ? item.application_date.split("-").reverse().join("-")
         : "-"}
     </Text>
-    <Text style={[styles.tableCell, { width: 70 }]}>
+    <Text style={[styles.tableCell, { width: 110 }]} numberOfLines={1}>
+      {item.weeding_details || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 100 }]} numberOfLines={1}>
       {item.method_of_weeding || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.diesel_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.labour_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.total_cost || "-"}
     </Text>
     <View style={styles.tableActions}>
       <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item)}>
@@ -79,7 +91,6 @@ const WeedManagementMobile = ({ getId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Date picker state
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -96,7 +107,6 @@ const WeedManagementMobile = ({ getId }) => {
   useEffect(() => {
     if (!getId) return;
     setIsLoading(true);
-
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -108,43 +118,35 @@ const WeedManagementMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-
           if (data.weed_treatment && Array.isArray(data.weed_treatment)) {
-            const formatted = data.weed_treatment.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              weeding_details: item.weeding_details || "",
-              method_of_weeding: item.method_of_weeding || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setWeedList(formatted);
+            setWeedList(
+              data.weed_treatment.map((item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                weeding_details: item.weeding_details || "",
+                method_of_weeding: item.method_of_weeding || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
         })
-        .catch((err) => {
-          console.error("WeedManagementMobile fetch error:", err);
-        })
+        .catch((err) => console.error("WeedManagementMobile fetch error:", err))
         .finally(() => setIsLoading(false));
     });
   }, [getId]);
 
-  // ── Scroll to form ─────────────────────────────────────────────────────────
   const scrollToForm = () => {
     setTimeout(() => {
       formSectionRef.current?.measureLayout(
         scrollRef.current,
-        (x, y) => {
-          scrollRef.current?.scrollTo({ y: y, animated: true });
-        },
-        () => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        },
+        (x, y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        () => scrollRef.current?.scrollToEnd({ animated: true }),
       );
     }, 150);
   };
 
-  // ── Date Picker ────────────────────────────────────────────────────────────
   const onDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === "ios");
     if (date) {
@@ -158,20 +160,15 @@ const WeedManagementMobile = ({ getId }) => {
 
   const formatDisplayDate = (date) => {
     if (!date) return "";
-    const d = String(date.getDate()).padStart(2, "0");
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const y = date.getFullYear();
-    return `${d}-${m}-${y}`;
+    return `${String(date.getDate()).padStart(2, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
   };
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
     if (row.application_date) {
       const parts = row.application_date.split("-");
-      if (parts.length === 3) {
+      if (parts.length === 3)
         setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
-      }
     }
     setWeedData({
       applicationDate: row.application_date || "",
@@ -181,12 +178,9 @@ const WeedManagementMobile = ({ getId }) => {
       labourCost: row.labour_cost || "",
       totalCost: row.total_cost || "",
     });
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
       "Delete Record",
@@ -211,8 +205,8 @@ const WeedManagementMobile = ({ getId }) => {
                 )
                 .then((resp) => {
                   if (resp.data?.data?.weed_treatment) {
-                    const formatted = resp.data.data.weed_treatment.map(
-                      (item, index) => ({
+                    setWeedList(
+                      resp.data.data.weed_treatment.map((item, index) => ({
                         id: index,
                         application_date: item.application_date || "",
                         weeding_details: item.weeding_details || "",
@@ -220,15 +214,12 @@ const WeedManagementMobile = ({ getId }) => {
                         diesel_cost: item.diesel_cost || "",
                         labour_cost: item.labour_cost || "",
                         total_cost: item.total_cost || "",
-                      }),
+                      })),
                     );
-                    setWeedList(formatted);
                   }
                   Alert.alert("Deleted", "Weed treatment record deleted.");
                 })
-                .catch(() => {
-                  Alert.alert("Error", "Failed to delete record.");
-                });
+                .catch(() => Alert.alert("Error", "Failed to delete record."));
             });
           },
         },
@@ -236,15 +227,12 @@ const WeedManagementMobile = ({ getId }) => {
     );
   };
 
-  // ── Save / Update ──────────────────────────────────────────────────────────
   const handleSave = () => {
     if (!weedData.applicationDate) {
       Alert.alert("Validation", "Please select an application date.");
       return;
     }
-
     setIsSaving(true);
-
     const item = {
       application_date: weedData.applicationDate,
       weeding_details: weedData.weedingDetails,
@@ -253,7 +241,6 @@ const WeedManagementMobile = ({ getId }) => {
       labour_cost: weedData.labourCost,
       total_cost: weedData.totalCost,
     };
-
     const payload =
       editingIndex !== null
         ? { operation: "update", index: editingIndex, item }
@@ -276,10 +263,9 @@ const WeedManagementMobile = ({ getId }) => {
             "Success",
             editingIndex !== null ? "Record updated!" : "Record added!",
           );
-
           if (resp.data?.data?.weed_treatment) {
-            const formatted = resp.data.data.weed_treatment.map(
-              (item, index) => ({
+            setWeedList(
+              resp.data.data.weed_treatment.map((item, index) => ({
                 id: index,
                 application_date: item.application_date || "",
                 weeding_details: item.weeding_details || "",
@@ -287,11 +273,9 @@ const WeedManagementMobile = ({ getId }) => {
                 diesel_cost: item.diesel_cost || "",
                 labour_cost: item.labour_cost || "",
                 total_cost: item.total_cost || "",
-              }),
+              })),
             );
-            setWeedList(formatted);
           }
-
           setWeedData({
             applicationDate: "",
             weedingDetails: "",
@@ -303,9 +287,9 @@ const WeedManagementMobile = ({ getId }) => {
           setSelectedDate(null);
           setEditingIndex(null);
         })
-        .catch(() => {
-          Alert.alert("Error", "Failed to save weed treatment record.");
-        })
+        .catch(() =>
+          Alert.alert("Error", "Failed to save weed treatment record."),
+        )
         .finally(() => setIsSaving(false));
     });
   };
@@ -330,7 +314,7 @@ const WeedManagementMobile = ({ getId }) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
     >
       <View style={styles.wrapper}>
-        {/* ── Accordion Header ── */}
+        {/* Accordion Header */}
         <TouchableOpacity
           style={styles.accordionHeader}
           onPress={() => setExpanded((p) => !p)}
@@ -354,7 +338,6 @@ const WeedManagementMobile = ({ getId }) => {
           />
         </TouchableOpacity>
 
-        {/* ── Expanded Content ── */}
         {expanded && (
           <ScrollView
             ref={scrollRef}
@@ -364,34 +347,57 @@ const WeedManagementMobile = ({ getId }) => {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {/* ── Records Table ── */}
+            {/* Table with horizontal scroll */}
             {weedList.length > 0 && (
               <View style={styles.tableWrapper}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>
-                    Date
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 70 }]}>
-                    Method
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>
-                    Actions
-                  </Text>
-                </View>
-                {weedList.map((item, index) => (
-                  <WeedRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={true}
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  <View>
+                    <View style={styles.tableHeaderRow}>
+                      <Text style={[styles.tableHeaderCell, { width: 30 }]}>
+                        #
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 90 }]}>
+                        Date
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 110 }]}>
+                        Details
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 100 }]}>
+                        Method
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Diesel
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Labour
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Total
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 80 }]}>
+                        Actions
+                      </Text>
+                    </View>
+                    {weedList.map((item, index) => (
+                      <WeedRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
-            {/* ── Form ── */}
+            {/* Form */}
             <View ref={formSectionRef} style={styles.formSection}>
               {editingIndex !== null && (
                 <View style={styles.editingBanner}>
@@ -561,11 +567,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconWrap: {
     width: 30,
     height: 30,

@@ -43,11 +43,7 @@ const LabeledInput = ({
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// IRRIGATION SOURCE PICKER  (replaces web <select>)
-// ─────────────────────────────────────────────────────────────────────────────
-const IRRIGATION_SOURCES = ["Canal", "Tube Well", "Solar Tubewell", "Drip"];
-// ─────────────────────────────────────────────────────────────────────────────
-// SIMPLE DROPDOWN  (COPIED FROM SEED DETAILS)
+// SIMPLE DROPDOWN
 // ─────────────────────────────────────────────────────────────────────────────
 const SimpleDropdown = ({
   placeholder,
@@ -92,7 +88,6 @@ const SimpleDropdown = ({
                 <Feather name="x" size={18} color="#4E4E4E" />
               </TouchableOpacity>
             </View>
-
             <FlatList
               data={options}
               keyExtractor={(item, idx) => String(item.value ?? idx)}
@@ -131,81 +126,36 @@ const SimpleDropdown = ({
     </>
   );
 };
-// const IrrigationSourcePicker = ({ value, onChange }) => {
-//   const [open, setOpen] = useState(false);
 
-//   return (
-//     <View>
-//       <Text style={styles.inputLabel}>Irrigation Source</Text>
-//       <TouchableOpacity
-//         style={styles.pickerTrigger}
-//         onPress={() => setOpen((p) => !p)}
-//         activeOpacity={0.8}
-//       >
-//         <Text
-//           style={[
-//             styles.pickerTriggerText,
-//             { color: value ? "#383838" : "#A9A9A9" },
-//           ]}
-//         >
-//           {value || "Select Source"}
-//         </Text>
-//         <Feather
-//           name={open ? "chevron-up" : "chevron-down"}
-//           size={14}
-//           color="#A9A9A9"
-//         />
-//       </TouchableOpacity>
-
-//       {open && (
-//         <View style={styles.dropdownList}>
-//           {IRRIGATION_SOURCES.map((src) => (
-//             <TouchableOpacity
-//               key={src}
-//               style={[
-//                 styles.dropdownItem,
-//                 value === src && styles.dropdownItemActive,
-//               ]}
-//               onPress={() => {
-//                 onChange(src);
-//                 setOpen(false);
-//               }}
-//             >
-//               <Text
-//                 style={[
-//                   styles.dropdownItemText,
-//                   value === src && styles.dropdownItemTextActive,
-//                 ]}
-//               >
-//                 {src}
-//               </Text>
-//             </TouchableOpacity>
-//           ))}
-//         </View>
-//       )}
-//     </View>
-//   );
-// };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TABLE ROW
-// ─────────────────────────────────────────────────────────────────────────────
 const irrigationSourceOptions = [
   { label: "Canal", value: "Canal" },
   { label: "Tube Well", value: "Tube Well" },
   { label: "Solar Tubewell", value: "Solar Tubewell" },
   { label: "Drip", value: "Drip" },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE ROW
+// ─────────────────────────────────────────────────────────────────────────────
 const IrrigationRow = ({ item, index, onEdit, onDelete }) => (
   <View style={[styles.tableRow, index % 2 === 0 && styles.tableRowEven]}>
     <Text style={[styles.tableCell, { width: 30 }]}>{index + 1}</Text>
-    <Text style={[styles.tableCell, { flex: 1 }]}>
+    <Text style={[styles.tableCell, { width: 90 }]} numberOfLines={1}>
       {item.application_date
         ? item.application_date.split("-").reverse().join("-")
         : "-"}
     </Text>
-    <Text style={[styles.tableCell, { width: 70 }]}>
+    <Text style={[styles.tableCell, { width: 100 }]} numberOfLines={1}>
       {item.irrigation_source || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.diesel_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.labour_cost || "-"}
+    </Text>
+    <Text style={[styles.tableCell, { width: 70 }]} numberOfLines={1}>
+      {item.total_cost || "-"}
     </Text>
     <View style={styles.tableActions}>
       <TouchableOpacity style={styles.editBtn} onPress={() => onEdit(item)}>
@@ -232,7 +182,6 @@ const IrrigationMobile = ({ getId }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Date picker state
   const [selectedDate, setSelectedDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -248,7 +197,6 @@ const IrrigationMobile = ({ getId }) => {
   useEffect(() => {
     if (!getId) return;
     setIsLoading(true);
-
     getAuthToken().then((token) => {
       axios
         .get(`${SERVER_URL}/api/fieldbook/field/${getId}`, {
@@ -260,42 +208,34 @@ const IrrigationMobile = ({ getId }) => {
         .then((resp) => {
           const data = resp.data.data;
           setFieldBookId(data.id);
-
           if (data.irrigation && Array.isArray(data.irrigation)) {
-            const formatted = data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+            setIrrigationList(
+              data.irrigation.map((item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                irrigation_source: item.irrigation_source || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
         })
-        .catch((err) => {
-          console.error("IrrigationMobile fetch error:", err);
-        })
+        .catch((err) => console.error("IrrigationMobile fetch error:", err))
         .finally(() => setIsLoading(false));
     });
   }, [getId]);
 
-  // ── Scroll to form ─────────────────────────────────────────────────────────
   const scrollToForm = () => {
     setTimeout(() => {
       formSectionRef.current?.measureLayout(
         scrollRef.current,
-        (x, y) => {
-          scrollRef.current?.scrollTo({ y: y, animated: true });
-        },
-        () => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        },
+        (x, y) => scrollRef.current?.scrollTo({ y, animated: true }),
+        () => scrollRef.current?.scrollToEnd({ animated: true }),
       );
     }, 150);
   };
 
-  // ── Date Picker ────────────────────────────────────────────────────────────
   const onDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === "ios");
     if (date) {
@@ -312,20 +252,15 @@ const IrrigationMobile = ({ getId }) => {
 
   const formatDisplayDate = (date) => {
     if (!date) return "";
-    const d = String(date.getDate()).padStart(2, "0");
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const y = date.getFullYear();
-    return `${d}-${m}-${y}`;
+    return `${String(date.getDate()).padStart(2, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${date.getFullYear()}`;
   };
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEdit = (row) => {
     setEditingIndex(row.id);
     if (row.application_date) {
       const parts = row.application_date.split("-");
-      if (parts.length === 3) {
+      if (parts.length === 3)
         setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
-      }
     }
     setIrrigationData({
       applicationDate: row.application_date || "",
@@ -334,12 +269,9 @@ const IrrigationMobile = ({ getId }) => {
       labourCost: row.labour_cost || "",
       totalCost: row.total_cost || "",
     });
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = (row) => {
     Alert.alert(
       "Delete Record",
@@ -364,23 +296,20 @@ const IrrigationMobile = ({ getId }) => {
                 )
                 .then((resp) => {
                   if (resp.data?.data?.irrigation) {
-                    const formatted = resp.data.data.irrigation.map(
-                      (item, index) => ({
+                    setIrrigationList(
+                      resp.data.data.irrigation.map((item, index) => ({
                         id: index,
                         application_date: item.application_date || "",
                         irrigation_source: item.irrigation_source || "",
                         diesel_cost: item.diesel_cost || "",
                         labour_cost: item.labour_cost || "",
                         total_cost: item.total_cost || "",
-                      }),
+                      })),
                     );
-                    setIrrigationList(formatted);
                   }
                   Alert.alert("Deleted", "Irrigation record deleted.");
                 })
-                .catch(() => {
-                  Alert.alert("Error", "Failed to delete record.");
-                });
+                .catch(() => Alert.alert("Error", "Failed to delete record."));
             });
           },
         },
@@ -388,15 +317,12 @@ const IrrigationMobile = ({ getId }) => {
     );
   };
 
-  // ── Save / Update ──────────────────────────────────────────────────────────
   const handleSave = () => {
     if (!irrigationData.applicationDate) {
       Alert.alert("Validation", "Please select an application date.");
       return;
     }
-
     setIsSaving(true);
-
     const item = {
       application_date: irrigationData.applicationDate,
       irrigation_source: irrigationData.irrigationSource,
@@ -404,7 +330,6 @@ const IrrigationMobile = ({ getId }) => {
       labour_cost: irrigationData.labourCost,
       total_cost: irrigationData.totalCost,
     };
-
     const payload =
       editingIndex !== null
         ? { operation: "update", index: editingIndex, item }
@@ -427,19 +352,18 @@ const IrrigationMobile = ({ getId }) => {
             "Success",
             editingIndex !== null ? "Record updated!" : "Record added!",
           );
-
           if (resp.data?.data?.irrigation) {
-            const formatted = resp.data.data.irrigation.map((item, index) => ({
-              id: index,
-              application_date: item.application_date || "",
-              irrigation_source: item.irrigation_source || "",
-              diesel_cost: item.diesel_cost || "",
-              labour_cost: item.labour_cost || "",
-              total_cost: item.total_cost || "",
-            }));
-            setIrrigationList(formatted);
+            setIrrigationList(
+              resp.data.data.irrigation.map((item, index) => ({
+                id: index,
+                application_date: item.application_date || "",
+                irrigation_source: item.irrigation_source || "",
+                diesel_cost: item.diesel_cost || "",
+                labour_cost: item.labour_cost || "",
+                total_cost: item.total_cost || "",
+              })),
+            );
           }
-
           setIrrigationData({
             applicationDate: "",
             irrigationSource: "",
@@ -450,9 +374,7 @@ const IrrigationMobile = ({ getId }) => {
           setSelectedDate(null);
           setEditingIndex(null);
         })
-        .catch(() => {
-          Alert.alert("Error", "Failed to save irrigation record.");
-        })
+        .catch(() => Alert.alert("Error", "Failed to save irrigation record."))
         .finally(() => setIsSaving(false));
     });
   };
@@ -476,7 +398,7 @@ const IrrigationMobile = ({ getId }) => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 70}
     >
       <View style={styles.wrapper}>
-        {/* ── Accordion Header ── */}
+        {/* Accordion Header */}
         <TouchableOpacity
           style={styles.accordionHeader}
           onPress={() => setExpanded((p) => !p)}
@@ -500,7 +422,6 @@ const IrrigationMobile = ({ getId }) => {
           />
         </TouchableOpacity>
 
-        {/* ── Expanded Content ── */}
         {expanded && (
           <ScrollView
             ref={scrollRef}
@@ -510,34 +431,54 @@ const IrrigationMobile = ({ getId }) => {
             showsVerticalScrollIndicator={false}
             nestedScrollEnabled={true}
           >
-            {/* ── Records Table ── */}
+            {/* Table with horizontal scroll */}
             {irrigationList.length > 0 && (
               <View style={styles.tableWrapper}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={[styles.tableHeaderCell, { width: 30 }]}>#</Text>
-                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>
-                    Date
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 70 }]}>
-                    Source
-                  </Text>
-                  <Text style={[styles.tableHeaderCell, { width: 80 }]}>
-                    Actions
-                  </Text>
-                </View>
-                {irrigationList.map((item, index) => (
-                  <IrrigationRow
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={true}
+                  bounces={false}
+                  nestedScrollEnabled={true}
+                >
+                  <View>
+                    <View style={styles.tableHeaderRow}>
+                      <Text style={[styles.tableHeaderCell, { width: 30 }]}>
+                        #
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 90 }]}>
+                        Date
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 100 }]}>
+                        Source
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Diesel
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Labour
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 70 }]}>
+                        Total
+                      </Text>
+                      <Text style={[styles.tableHeaderCell, { width: 80 }]}>
+                        Actions
+                      </Text>
+                    </View>
+                    {irrigationList.map((item, index) => (
+                      <IrrigationRow
+                        key={item.id}
+                        item={item}
+                        index={index}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </View>
+                </ScrollView>
               </View>
             )}
 
-            {/* ── Form ── */}
+            {/* Form */}
             <View ref={formSectionRef} style={styles.formSection}>
               {editingIndex !== null && (
                 <View style={styles.editingBanner}>
@@ -582,12 +523,6 @@ const IrrigationMobile = ({ getId }) => {
                   )}
                 </View>
                 <View style={styles.formCol}>
-                  {/* <IrrigationSourcePicker
-                    value={irrigationData.irrigationSource}
-                    onChange={(v) =>
-                      setIrrigationData((p) => ({ ...p, irrigationSource: v }))
-                    }
-                  /> */}
                   <Text style={styles.inputLabel}>Irrigation Source</Text>
                   <SimpleDropdown
                     placeholder="Irrigation Source"
@@ -639,7 +574,6 @@ const IrrigationMobile = ({ getId }) => {
                     onFocus={scrollToForm}
                   />
                 </View>
-                {/* Empty col to maintain 2-column grid balance */}
                 <View style={styles.formCol} />
               </View>
 
@@ -706,11 +640,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconWrap: {
     width: 30,
     height: 30,
@@ -813,9 +743,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   dateInputText: { fontSize: 12, fontWeight: "500", flex: 1 },
-
-  // ── Irrigation source picker ──
-  pickerTrigger: {
+  dropdown: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -826,26 +754,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
-  pickerTriggerText: { fontSize: 12, fontWeight: "500", flex: 1 },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    marginTop: 4,
-    overflow: "hidden",
-    zIndex: 10,
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  dropdownItemActive: { backgroundColor: "#E5FAE9" },
-  dropdownItemText: { fontSize: 12, color: "#383838" },
-  dropdownItemTextActive: { color: "#39B54B", fontWeight: "600" },
-
+  dropdownText: { fontSize: 12, fontWeight: "500", flex: 1, marginRight: 4 },
   btnRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -868,24 +777,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
-  dropdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  dropdownText: {
-    fontSize: 12,
-    fontWeight: "500",
-    flex: 1,
-    marginRight: 4,
-  },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -922,5 +813,4 @@ const styles = StyleSheet.create({
   modalItemActive: { backgroundColor: "#F0FDF4" },
   modalItemText: { fontSize: 13, color: "#4E4E4E" },
   modalItemTextActive: { color: "#15803D", fontWeight: "700" },
-  
 });
