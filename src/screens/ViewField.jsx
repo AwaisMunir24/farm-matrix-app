@@ -32,6 +32,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import axios from "axios";
 import { SERVER_URL } from "../utils";
 import { getAuthToken } from "../utils/auth";
+import UrduFieldReportModal from "./Urdufieldreportmodal";
 
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -1116,87 +1117,88 @@ const FieldInfoPanel = ({ fieldData, fieldBookData }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION 5 ── FIELD REPORT MODAL
 // ─────────────────────────────────────────────────────────────────────────────
-const FieldReportModal = ({ visible, onClose, fieldData, fieldBookData }) => {
-  const sections = [
-    {
-      title: "Field Overview",
-      rows: [
-        ["Field Name", fieldData?.field_name],
-        ["Crop Type", fieldData?.cropType],
-        ["Area", fieldData?.area_of_field ? `${fieldData.area_of_field} acre` : null],
-        ["Soil Type", fieldData?.soil_type],
-        ["Irrigation", fieldData?.irrigation_type],
-        ["Ownership", fieldData?.ownership_type],
-        ["Village", fieldData?.village_name],
-        ["Tehsil", fieldData?.tehsil],
-      ],
-    },
-    fieldBookData && {
-      title: "Cost Summary",
-      rows: [
-        ["Seed Total", fieldBookData?.seed_detail?.total_cost],
-        ["Land Prep Total", fieldBookData?.preparation_of_land?.total_cost],
-        ["Sowing Total", fieldBookData?.sowing_detail?.total_cost],
-        ["Irrigation Total", fieldBookData?.irrigation?.total_cost],
-        ["Fertilizer Total", fieldBookData?.fertilizer?.total_cost],
-        ["Pest Control Total", fieldBookData?.disease_and_pest?.total_cost],
-        ["Weed Treatment Total", fieldBookData?.weed_treatment?.total_cost],
-        ["Harvesting Total", fieldBookData?.harvesting?.total_cost],
-      ],
-    },
-    fieldBookData && {
-      title: "Harvest Summary",
-      rows: [
-        ["Actual Harvest", fieldBookData?.harvesting?.actual_harvest],
-        ["Estimated Harvest", fieldBookData?.harvesting?.estimated_harvest],
-        ["Harvesting Type", fieldBookData?.harvesting?.harvesting_type],
-        ["Yield Cost/Mound", fieldBookData?.harvesting?.yield_cost_per_mound],
-      ],
-    },
-  ].filter(Boolean);
+// const FieldReportModal = ({ visible, onClose, fieldData, fieldBookData }) => {
+//   const sections = [
+//     {
+//       title: "Field Overview",
+//       rows: [
+//         ["Field Name", fieldData?.field_name],
+//         ["Crop Type", fieldData?.cropType],
+//         ["Area", fieldData?.area_of_field ? `${fieldData.area_of_field} acre` : null],
+//         ["Soil Type", fieldData?.soil_type],
+//         ["Irrigation", fieldData?.irrigation_type],
+//         ["Ownership", fieldData?.ownership_type],
+//         ["Village", fieldData?.village_name],
+//         ["Tehsil", fieldData?.tehsil],
+//       ],
+//     },
+//     fieldBookData && {
+//       title: "Cost Summary",
+//       rows: [
+//         ["Seed Total", fieldBookData?.seed_detail?.total_cost],
+//         ["Land Prep Total", fieldBookData?.preparation_of_land?.total_cost],
+//         ["Sowing Total", fieldBookData?.sowing_detail?.total_cost],
+//         ["Irrigation Total", fieldBookData?.irrigation?.total_cost],
+//         ["Fertilizer Total", fieldBookData?.fertilizer?.total_cost],
+//         ["Pest Control Total", fieldBookData?.disease_and_pest?.total_cost],
+//         ["Weed Treatment Total", fieldBookData?.weed_treatment?.total_cost],
+//         ["Harvesting Total", fieldBookData?.harvesting?.total_cost],
+//       ],
+//     },
+//     fieldBookData && {
+//       title: "Harvest Summary",
+//       rows: [
+//         ["Actual Harvest", fieldBookData?.harvesting?.actual_harvest],
+//         ["Estimated Harvest", fieldBookData?.harvesting?.estimated_harvest],
+//         ["Harvesting Type", fieldBookData?.harvesting?.harvesting_type],
+//         ["Yield Cost/Mound", fieldBookData?.harvesting?.yield_cost_per_mound],
+//       ],
+//     },
+//   ].filter(Boolean);
 
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.reportModalContainer}>
-        <View style={styles.reportModalBox}>
-          {/* Header */}
-          <LinearGradient
-            colors={["#39B54B", "#22863a"]}
-            style={styles.reportModalHeader}
-          >
-            <View>
-              <Text style={styles.reportModalTitle}>Field Report</Text>
-              <Text style={styles.reportModalSub}>
-                {fieldData?.field_name} · {fieldData?.cropType}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.reportCloseBtn}>
-              <Feather name="x" size={18} color="#fff" />
-            </TouchableOpacity>
-          </LinearGradient>
+//   return (
+//     <Modal visible={visible} animationType="slide" transparent>
+//       <View style={styles.reportModalContainer}>
+//         <View style={styles.reportModalBox}>
+//           {/* Header */}
+//           <LinearGradient
+//             colors={["#39B54B", "#22863a"]}
+//             style={styles.reportModalHeader}
+//           >
+//             <View>
+//               <Text style={styles.reportModalTitle}>Field Report</Text>
+//               <Text style={styles.reportModalSub}>
+//                 {fieldData?.field_name} · {fieldData?.cropType}
+//               </Text>
+//             </View>
+//             <TouchableOpacity onPress={onClose} style={styles.reportCloseBtn}>
+//               <Feather name="x" size={18} color="#fff" />
+//             </TouchableOpacity>
+//           </LinearGradient>
 
-          <ScrollView
-            style={styles.reportScroll}
-            contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {sections.map((section) => (
-              <View key={section.title} style={styles.reportSection}>
-                <Text style={styles.reportSectionTitle}>{section.title}</Text>
-                {section.rows.map(([label, value]) => (
-                  <View key={label} style={styles.reportRow}>
-                    <Text style={styles.reportLabel}>{label}</Text>
-                    <Text style={styles.reportValue}>{value || "N/A"}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-};
+//           <ScrollView
+//             style={styles.reportScroll}
+//             contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+//             showsVerticalScrollIndicator={false}
+//           >
+//             {sections.map((section) => (
+//               <View key={section.title} style={styles.reportSection}>
+//                 <Text style={styles.reportSectionTitle}>{section.title}</Text>
+//                 {section.rows.map(([label, value]) => (
+//                   <View key={label} style={styles.reportRow}>
+//                     <Text style={styles.reportLabel}>{label}</Text>
+//                     <Text style={styles.reportValue}>{value || "N/A"}</Text>
+//                   </View>
+//                 ))}
+//               </View>
+//             ))}
+//           </ScrollView>
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+// };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN SCREEN
@@ -1515,12 +1517,14 @@ const ViewField = ({ navigation, route }) => {
       </ScrollView>
 
       {/* ── Field Report Modal */}
-      <FieldReportModal
+      <UrduFieldReportModal
         visible={showReport}
         onClose={() => setShowReport(false)}
         fieldData={fieldData}
         fieldBookData={fieldBookData}
       />
+
+
     </SafeAreaView>
   );
 };
