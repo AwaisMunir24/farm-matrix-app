@@ -690,4 +690,3 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: { color: "#fff", fontWeight: "600", fontSize: 13 },
 });
-
