@@ -20,7 +20,8 @@ import { Feather } from "@expo/vector-icons";
 import { SERVER_URL } from "../utils/index";
 import tehsilData from "../utils/TehsilData.json"; // ← your JSON file
 import { getAuthUser } from "../utils/auth"; // ← centralized auth
-
+import NetInfo from "@react-native-community/netinfo";
+import { saveDraft } from "../utils/offlineQueue";
 // ─── Flatten tehsil JSON into a searchable list ───────────────────────────────
 // Each item: { name, district, division, province }
 const ALL_TEHSILS = tehsilData.provinces.flatMap((province) =>
@@ -374,106 +375,93 @@ const AddNewFarmer = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) {
-      const failedFields = Object.values(errors)
-        .map((v) => `• ${v}`)
-        .join("\n");
-      Alert.alert("Please fix the following", failedFields);
-      return;
-    }
+const handleSave = async () => {
+  if (!validateForm()) {
+    const failedFields = Object.values(errors)
+      .map((v) => `• ${v}`)
+      .join("\n");
+    Alert.alert("Please fix the following", failedFields);
+    return;
+  }
+
+  const farmerPayload = {
+    first_name: farmerData.first_name,
+    last_name: farmerData.last_name,
+    father_husband_name: farmerData.father_husband_name,
+    username: `${farmerData.first_name}_${farmerData.last_name}`.toLowerCase(),
+    email: farmerData.email,
+    password: "123456",
+    role: "farmer",
+    dob: farmerData.date_of_birth,
+    cnic: farmerData.cnic,
+    phone: farmerData.phone,
+    address: farmerData.address,
+    user_code: farmerData.farmerCode,
+    cluster_id: farmerData.cluster_id,
+    tehsil: farmerData.tehsil,
+    farmer_responsivity: farmerData.farmer_responsivity,
+    data_knowledge: farmerData.data_knowledge,
+    organization_id: userRole === "admin" ? farmerData.organization_id : userId,
+  };
+
+  // ── Check connectivity first ──
+  const netState = await NetInfo.fetch();
+  const isOnline = netState.isConnected && netState.isInternetReachable;
+
+  if (!isOnline) {
+    // Save to draft queue
     setLoading(true);
     try {
-      const farmerPayload = {
-        first_name: farmerData.first_name,
-        last_name: farmerData.last_name,
-        father_husband_name: farmerData.father_husband_name,
-        username:
-          `${farmerData.first_name}_${farmerData.last_name}`.toLowerCase(),
-        email: farmerData.email,
-        password: "123456",
-        role: "farmer",
-        dob: farmerData.date_of_birth,
-        cnic: farmerData.cnic,
-        phone: farmerData.phone,
-        address: farmerData.address,
-        user_code: farmerData.farmerCode,
-        cluster_id: farmerData.cluster_id,
-        tehsil: farmerData.tehsil,
-        farmer_responsivity: farmerData.farmer_responsivity,
-        data_knowledge: farmerData.data_knowledge,
-        organization_id:
-          userRole === "admin" ? farmerData.organization_id : userId,
-      };
-
-      const res = await fetch(`${SERVER_URL}/api/user`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": authToken,
-        },
-        body: JSON.stringify(farmerPayload),
-      });
-
-      const result = await res.json();
-
-      // Full server response logged — check your Expo terminal/console
-      console.log("=== SERVER RESPONSE ===");
-      console.log("Status:", res.status);
-      console.log("Body:", JSON.stringify(result, null, 2));
-      console.log("=== PAYLOAD SENT ===");
-      console.log(JSON.stringify(farmerPayload, null, 2));
-
-      if (!result.success) {
-        // Show the full server error — could be nested in result.errors or result.data
-        const serverMsg =
-          result.message ||
-          (result.errors && JSON.stringify(result.errors)) ||
-          (result.data && JSON.stringify(result.data)) ||
-          "Failed to create farmer";
-        throw new Error(serverMsg);
-      }
-
-      Alert.alert("Success", "Farmer created successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            setFarmerData({
-              first_name: "",
-              last_name: "",
-              father_husband_name: "",
-              cnic: "",
-              email: "",
-              phone: "",
-              address: "",
-              farmerCode: nextFarmerCode,
-              cluster_id: "",
-              cluster_name: "",
-              organization_id: "",
-              organization_name: "",
-              tehsil: "",
-              farmer_responsivity: "",
-              data_knowledge: "",
-              date_of_birth: "",
-            });
-            setDate(null);
-            setErrors({});
-            fetchNextFarmerCode(authToken);
-            navigation.replace("MainTabs");
-          },
-        },
-      ]);
-    } catch (error) {
-      console.error("Save farmer error:", error);
+      await saveDraft(farmerPayload);
       Alert.alert(
-        "Error",
-        error.message || "An error occurred. Please try again.",
+        "Saved as Draft",
+        "No internet connection. Farmer has been saved locally and will upload automatically when you're back online.",
+        [{ text: "OK", onPress: () => navigation.replace("MainTabs") }]
       );
+    } catch {
+      Alert.alert("Error", "Could not save draft. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+    return;
+  }
 
+  // ── Online — normal flow ──
+  setLoading(true);
+  try {
+    const res = await fetch(`${SERVER_URL}/api/user`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-auth-token": authToken,
+      },
+      body: JSON.stringify(farmerPayload),
+    });
+    const result = await res.json();
+
+    if (!result.success) {
+      const serverMsg =
+        result.message ||
+        (result.errors && JSON.stringify(result.errors)) ||
+        "Failed to create farmer";
+      throw new Error(serverMsg);
+    }
+
+    Alert.alert("Success", "Farmer created successfully!", [
+      {
+        text: "OK",
+        onPress: () => {
+          // reset form...
+          navigation.replace("MainTabs");
+        },
+      },
+    ]);
+  } catch (error) {
+    Alert.alert("Error", error.message || "An error occurred. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
   const goBack = () => navigation.replace("MainTabs");
 
   if (initialLoading) {
