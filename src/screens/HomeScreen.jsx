@@ -10,7 +10,6 @@ import {
   SafeAreaView,
   Platform,
 } from "react-native";
-// import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
@@ -38,13 +37,12 @@ import { SERVER_URL } from "../utils/index";
 import { getAuthToken } from "../utils/auth";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ navigation, onOpenSidebar }) => {
   const tabBarHeight = useBottomTabBarHeight();
   const scrollViewRef = useRef(null);
   const inputRef = useRef(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
 
-  // ── NEW: controlled value for the AI input ──────────────────────────────
   const [homeInput, setHomeInput] = useState("");
 
   const [weatherData, setWeatherData] = useState({
@@ -62,8 +60,8 @@ const HomeScreen = ({ navigation }) => {
     try {
       setLoadingWeather(true);
 
-      const token = await getAuthToken(); // ✅ wait for token
-    
+      const token = await getAuthToken();
+
       const response = await axios.get(
         `${SERVER_URL}/api/weather/detail?lat=${lat}&lon=${lon}&units=metric`,
         {
@@ -125,6 +123,7 @@ const HomeScreen = ({ navigation }) => {
       }, 800);
     }
   };
+
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(function (permResult) {
       if (permResult.status !== "granted") {
@@ -146,7 +145,6 @@ const HomeScreen = ({ navigation }) => {
     });
   }, []);
 
-  // ── Scroll the input into view when keyboard opens ──────────────────────
   const handleInputFocus = () => {
     setTimeout(() => {
       inputRef.current?.measureLayout(
@@ -159,7 +157,6 @@ const HomeScreen = ({ navigation }) => {
     }, 300);
   };
 
-  // ── Navigate to Chat with whatever the user typed ───────────────────────
   const handleSendMessage = () => {
     const text = homeInput.trim();
     inputRef.current?.blur();
@@ -167,7 +164,6 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate("Chat", { initialMessage: text || undefined });
   };
 
-  // ── Tapping the mic goes straight to chat and opens recording ───────────
   const handleMicPress = () => {
     inputRef.current?.blur();
     navigation.navigate("Chat", { openMic: true });
@@ -183,7 +179,7 @@ const HomeScreen = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
+        <TouchableOpacity style={styles.menuButton} onPress={onOpenSidebar}>
           <MenuBar width={24} height={24} />
         </TouchableOpacity>
         <View style={{ width: 160, aspectRatio: 152 / 31 }}>
@@ -448,7 +444,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* ── AI Assistant ────────────────────────────────────────────────── */}
+          {/* AI Assistant */}
           <View style={styles.aiCard}>
             <View style={styles.aiCardContent}>
               <View>
@@ -487,7 +483,6 @@ const HomeScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
-          {/* ── End AI Assistant ─────────────────────────────────────────────── */}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -508,8 +503,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
   },
   scrollContent: {
-    paddingBottom: 120, // 🔥 prevents bottom overlap
-    flexGrow: 1, // 🔥 ensures scroll works on all devices
+    paddingBottom: 120,
+    flexGrow: 1,
   },
   menuButton: {
     width: 40,
@@ -672,117 +667,53 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     flexWrap: "wrap",
   },
-  surveyWrapper: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderRadius: 15,
-    marginTop: 14,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    marginBottom: 90,
-  },
-  aiHeaderRow: {
-    paddingVertical: 11,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  aiHeaderText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#383838",
-    marginRight: 8,
-  },
-  gradientBorder: {
-    borderRadius: 40,
-    padding: 1,
-  },
-  inputInner: {
-    borderRadius: 38,
-    backgroundColor: "#F2F2F2",
-    overflow: "hidden",
-    position: "relative",
-    top: 1.2,
-  },
-  input: {
-    paddingHorizontal: 25,
-    fontSize: 13,
-    color: "#BCBCBC",
-    paddingVertical: 14,
-  },
-
   aiCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
     marginTop: 14,
+    marginBottom: 10,
     borderRadius: 16,
     padding: 16,
-
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-
   aiCardContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   aiTitle: {
     fontSize: 16,
     fontWeight: "600",
     color: "#383838",
     marginBottom: 6,
   },
-
   aiSubtitle: {
     fontSize: 12,
     color: "#6B6B6B",
     marginBottom: 12,
     width: 180,
   },
-
   aiButton: {
     borderRadius: 8,
     overflow: "hidden",
     width: 140,
   },
-
   aiButtonGradient: {
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
-    display: "flex",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   aiButtonText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
-  },
-  aiCard: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
-    marginTop: 14,
-    marginBottom: 10, // 👈 small breathing space
-    borderRadius: 16,
-    padding: 16,
-
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
 });
 

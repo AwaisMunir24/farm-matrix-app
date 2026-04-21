@@ -37,10 +37,10 @@ const calculatePolygonAreaInAcres = (coordinates) => {
   return area * 0.000247105;
 };
 
-// ─── NEW: Distance between two lat/lng points in FEET ───────────────────────
+// ─── Distance between two lat/lng points in FEET ────────────────────────────
 const getDistanceInFeet = (p1, p2) => {
   const toRad = (deg) => (deg * Math.PI) / 180;
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000;
   const dLat = toRad(p2.latitude - p1.latitude);
   const dLon = toRad(p2.longitude - p1.longitude);
   const a =
@@ -50,17 +50,20 @@ const getDistanceInFeet = (p1, p2) => {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distanceInMeters = R * c;
-  return distanceInMeters * 3.28084; // convert meters → feet
+  return R * c * 3.28084;
 };
 
-// ─── NEW: Midpoint between two lat/lng points (for label placement) ──────────
+// ─── Midpoint between two lat/lng points ────────────────────────────────────
 const getMidpoint = (p1, p2) => ({
   latitude: (p1.latitude + p2.latitude) / 2,
   longitude: (p1.longitude + p2.longitude) / 2,
 });
 
-// ─── Emoji pin marker ───────────────────────────────────────────────────────
+// ─── Convert API [lng, lat] arrays → RN Maps {latitude, longitude} ──────────
+const toLatLng = (coords) =>
+  coords.map(([lng, lat]) => ({ latitude: lat, longitude: lng }));
+
+// ─── Emoji pin marker ────────────────────────────────────────────────────────
 const PinDot = React.memo(() => (
   <View
     style={{
@@ -75,7 +78,11 @@ const PinDot = React.memo(() => (
 ));
 
 // ─── Component ───────────────────────────────────────────────────────────────
-const AddNewPolygonFields = ({ onPolygonComplete }) => {
+const AddNewPolygonFields = ({
+  onPolygonComplete,
+  nearbyPolygons = [],
+  onNearbyPolygonPress, // ← ADDED
+}) => {
   const mapRef = useRef(null);
   const [points, setPoints] = useState([]);
   const [isClosed, setIsClosed] = useState(false);
@@ -167,10 +174,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
     ]);
   };
 
-  // ─── NEW: Build segment list with distance labels ─────────────────────────
-  // Each segment = { from, to, midpoint, feet }
-  // For open polygon: segments between consecutive drawn points
-  // For closed polygon: also includes the closing edge (last → first)
+  // ─── Segments with distance labels ──────────────────────────────────────────
   const segments = React.useMemo(() => {
     if (points.length < 2) return [];
     const segs = [];
@@ -253,6 +257,17 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
         </View>
       )}
 
+      {/* ── Nearby polygons legend ── */}
+      {nearbyPolygons.length > 0 && (
+        <View style={styles.legendRow}>
+          <View style={styles.legendDot} />
+          <Text style={styles.legendText}>
+            {nearbyPolygons.length} nearby field
+            {nearbyPolygons.length > 1 ? "s" : ""} shown in orange
+          </Text>
+        </View>
+      )}
+
       {/* ── Map ── */}
       <View style={styles.mapWrap}>
         <MapView
@@ -269,6 +284,51 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
           pitchEnabled={false}
           toolbarEnabled={false}
         >
+          {/* ── Nearby cluster polygons from API ── */}
+          {nearbyPolygons.map((field, idx) => {
+            const raw = field?.geometry?.coordinates?.[0] ?? [];
+            if (raw.length < 3) return null;
+            const coords = toLatLng(raw);
+
+            return (
+              <React.Fragment key={`nearby-${field.id ?? idx}`}>
+                <Polygon
+                  coordinates={coords}
+                  fillColor="rgba(249,115,22,0.15)"
+                  strokeColor="#F97316"
+                  strokeWidth={2.5}
+                  tappable={true} // ← ADDED
+                  onPress={() => onNearbyPolygonPress?.(field)} // ← ADDED
+                />
+                {field.center_latitude && field.center_longitude && (
+                  <Marker
+                    coordinate={{
+                      latitude: parseFloat(field.center_latitude),
+                      longitude: parseFloat(field.center_longitude),
+                    }}
+                    anchor={{ x: 0.5, y: 0.5 }}
+                    tracksViewChanges={false}
+                    zIndex={100}
+                    onPress={() => onNearbyPolygonPress?.(field)} // ← ADDED
+                  >
+                    <View style={styles.nearbyLabel}>
+                      <Text style={styles.nearbyLabelText}>
+                        {field.cluster_name ??
+                          field.farmer?.first_name ??
+                          `Field #${field.id}`}
+                      </Text>
+                      {field.area_acres && (
+                        <Text style={styles.nearbyLabelSub}>
+                          {parseFloat(field.area_acres).toFixed(1)} ac
+                        </Text>
+                      )}
+                    </View>
+                  </Marker>
+                )}
+              </React.Fragment>
+            );
+          })}
+
           {/* Drawing polyline */}
           {!isClosed && points.length > 1 && (
             <Polyline
@@ -311,7 +371,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
             </Marker>
           ))}
 
-          {/* ── Distance label at the midpoint of each segment ── */}
+          {/* Distance labels at midpoint of each segment */}
           {segments.map((seg) => (
             <Marker
               key={`dist-${seg.index}`}
@@ -327,7 +387,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
           ))}
         </MapView>
 
-        {/* Point counter */}
+        {/* Point counter badge */}
         {points.length > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{points.length} pts</Text>
@@ -406,6 +466,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
 
 export default AddNewPolygonFields;
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
@@ -474,6 +535,27 @@ const styles = StyleSheet.create({
   },
   hintText: { fontSize: 12, color: "#15803D", fontWeight: "500", flex: 1 },
 
+  // Nearby legend strip
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF7ED",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F97316",
+    gap: 8,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#F97316",
+  },
+  legendText: { fontSize: 12, color: "#C2410C", fontWeight: "500", flex: 1 },
+
   // Map
   mapWrap: {
     borderRadius: 16,
@@ -518,24 +600,37 @@ const styles = StyleSheet.create({
   },
   acresFloatText: { color: "#fff", fontSize: 14, fontWeight: "800" },
 
-  // ── Distance label on map
-  distLabel: {
-    backgroundColor: "#16A34A",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 80, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 8,
-    overflow: "visible",
-  },
+  // Distance label on map
   distLabelText: {
     color: "#fff",
     fontSize: 12,
     fontWeight: "900",
     letterSpacing: 0.3,
+  },
+
+  // Nearby polygon label bubble
+  nearbyLabel: {
+    backgroundColor: "rgba(249,115,22,0.92)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
+  },
+  nearbyLabelText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  nearbyLabelSub: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 9,
+    fontWeight: "600",
   },
 
   // Buttons

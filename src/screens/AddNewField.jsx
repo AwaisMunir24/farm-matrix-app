@@ -238,7 +238,7 @@ const AddNewField = ({ navigation, route }) => {
   const fetchCropTypes = async (category) => {
     setLoadingCrops(true);
     try {
-     const token = await getAuthToken();
+      const token = await getAuthToken();
       const resp = await axios.get(
         `${SERVER_URL}/api/cropType/category/${category}`,
         {

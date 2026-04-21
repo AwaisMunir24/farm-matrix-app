@@ -12,9 +12,6 @@ import {
   markOnboardingDone,
 } from "./src/utils/auth";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SCREEN STATES
-// ─────────────────────────────────────────────────────────────────────────────
 const SCREENS = {
   BOOTING: "booting",
   SPLASH: "splash",
@@ -26,7 +23,6 @@ const SCREENS = {
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.BOOTING);
 
-  // ── Boot: decide which screen to show ──────────────────────────────────────
   const boot = useCallback(async () => {
     try {
       const [user, onboardingDone] = await Promise.all([
@@ -35,13 +31,10 @@ export default function App() {
       ]);
 
       if (user?.token) {
-        // Valid, non-expired token found → go straight to home
         setScreen(SCREENS.HOME);
       } else if (onboardingDone) {
-        // Seen onboarding before, but no valid session → login
         setScreen(SCREENS.LOGIN);
       } else {
-        // Brand new install → show splash then onboarding
         setScreen(SCREENS.SPLASH);
       }
     } catch (e) {
@@ -54,7 +47,6 @@ export default function App() {
     boot();
   }, [boot]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleGetStarted = () => setScreen(SCREENS.ONBOARDING);
 
   const handleOnboardingComplete = async () => {
@@ -66,7 +58,10 @@ export default function App() {
     setScreen(SCREENS.HOME);
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const handleLogout = () => {
+    setScreen(SCREENS.LOGIN);
+  };
+
   if (screen === SCREENS.BOOTING) {
     return (
       <View style={styles.bootContainer}>
@@ -89,7 +84,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <TabNavigator />
+      <TabNavigator onLogout={handleLogout} />
       <StatusBar style="dark" />
     </NavigationContainer>
   );

@@ -16,25 +16,21 @@ import ProfileScreen from "../screens/ProfileScreen";
 import MyProfile from "../../assets/Field-Map 1.svg";
 import HomeIcon from "../../assets/home.svg";
 import ProfileIcon from "../../assets/profile.svg";
+
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get("window");
 
 const TAB_BAR_HEIGHT = 92;
-const CURVE_HEIGHT = 20; // total extra height for the wave area
-const cx = width / 2; // horizontal center
+const CURVE_HEIGHT = 20;
+const cx = width / 2;
 
-//  Wave shape explanation:
-//  Starts flat from left → slopes DOWN into a deep wide U → slopes back UP → flat to right
-//  Uses cubic bezier (C) for very smooth, gradual, natural-looking curves
 const TabBarBackground = () => {
   const w = width;
   const h = TAB_BAR_HEIGHT + CURVE_HEIGHT;
 
-  // Key X positions
-
-  const waveStartX = cx - 85; // where left slope begins
-  const waveEndX = cx + 85; // where right slope ends
-  const dipY = CURVE_HEIGHT + 52; // how low the bottom of the U goes
+  const waveStartX = cx - 85;
+  const waveEndX = cx + 85;
+  const dipY = CURVE_HEIGHT + 52;
 
   const path = `
     M0,${CURVE_HEIGHT}
@@ -80,7 +76,7 @@ const CustomHomeButton = ({ children, onPress }) => (
   </TouchableOpacity>
 );
 
-const BottomTabNavigator = () => {
+const BottomTabNavigator = ({ onOpenSidebar }) => {
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -90,7 +86,6 @@ const BottomTabNavigator = () => {
         tabBarInactiveTintColor: "#383838",
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIconStyle: styles.tabBarIcon,
         tabBarBackground: () => <TabBarBackground />,
         tabBarIconStyle: {
           marginBottom: 4,
@@ -104,27 +99,20 @@ const BottomTabNavigator = () => {
           tabBarItemStyle: {
             paddingLeft: 35,
           },
-
           tabBarIcon: ({ focused }) => <MyProfile width={24} height={24} />,
         }}
       />
 
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
         options={{
           tabBarLabel: () => null,
           tabBarButton: (props) => <CustomHomeButton {...props} />,
-          tabBarIcon: () => (
-            // <Image
-            //   source={require("../../assets/home.png")}
-            //   style={styles.homeIcon}
-            //   resizeMode="contain"
-            // />
-            <HomeIcon width={28} height={28} />
-          ),
+          tabBarIcon: () => <HomeIcon width={28} height={28} />,
         }}
-      />
+      >
+        {(props) => <HomeScreen {...props} onOpenSidebar={onOpenSidebar} />}
+      </Tab.Screen>
 
       <Tab.Screen
         name="Profile"
@@ -134,17 +122,7 @@ const BottomTabNavigator = () => {
             paddingRight: 35,
             marginBottom: 6,
           },
-          tabBarIcon: ({ focused }) => (
-            // <Image
-            //   source={require("../../assets/profile.png")}
-            //   style={[
-            //     styles.icon,
-            //     { tintColor: focused ? "#39B54B" : "#383838" },
-            //   ]}
-            //   resizeMode="contain"
-            // />
-            <ProfileIcon width={28} height={28} />
-          ),
+          tabBarIcon: ({ focused }) => <ProfileIcon width={28} height={28} />,
         }}
       />
     </Tab.Navigator>
@@ -157,7 +135,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     height: TAB_BAR_HEIGHT + CURVE_HEIGHT,
     paddingBottom: 12,
-    paddingTop: CURVE_HEIGHT + 14, // push labels/icons below the wave dip
+    paddingTop: CURVE_HEIGHT + 14,
     position: "absolute",
     elevation: 0,
     shadowOpacity: 0,
@@ -167,14 +145,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#383838",
   },
-  tabBarIcon: {
-    marginBottom: -4,
-  },
-  icon: {
-    width: 24,
-    height: 24,
-  },
-
   svgContainer: {
     position: "absolute",
     bottom: 0,
@@ -185,10 +155,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 12,
   },
-
-  // Button sits inside the deep U curve
   customButtonWrapper: {
-    top: -(CURVE_HEIGHT + 32), // floats up so circle sits in the wave
+    top: -(CURVE_HEIGHT + 32),
     justifyContent: "center",
     alignItems: "center",
     width: 70,
@@ -205,12 +173,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 14,
     elevation: 14,
-  },
-
-  homeIcon: {
-    width: 28,
-    height: 28,
-    tintColor: "#FFFFFF",
   },
 });
 
