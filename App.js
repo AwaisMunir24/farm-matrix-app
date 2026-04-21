@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { StyleSheet, View, ActivityIndicator, Alert } from "react-native";
 import { useState, useEffect, useCallback } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import SplashScreen from "./SplashScreen";
@@ -11,6 +11,7 @@ import {
   hasSeenOnboarding,
   markOnboardingDone,
 } from "./src/utils/auth";
+import OfflineSyncBanner from "./src/components/OfflineSyncBanner";
 
 const SCREENS = {
   BOOTING: "booting",
@@ -22,6 +23,7 @@ const SCREENS = {
 
 export default function App() {
   const [screen, setScreen] = useState(SCREENS.BOOTING);
+  const [authToken, setAuthToken] = useState(null);
 
   const boot = useCallback(async () => {
     try {
@@ -32,6 +34,7 @@ export default function App() {
 
       if (user?.token) {
         setScreen(SCREENS.HOME);
+        setAuthToken(user.token);
       } else if (onboardingDone) {
         setScreen(SCREENS.LOGIN);
       } else {
@@ -85,6 +88,19 @@ export default function App() {
   return (
     <NavigationContainer>
       <TabNavigator onLogout={handleLogout} />
+      <View style={{ flex: 1 }}>
+        <OfflineSyncBanner
+          authToken={authToken}
+          onSyncComplete={({ uploaded, failed }) => {
+            Alert.alert(
+              "Sync Complete",
+              `${uploaded} farmer(s) uploaded successfully.${failed > 0 ? ` ${failed} failed.` : ""}`,
+            );
+          }}
+        />
+        <TabNavigator />
+      </View>
+
       <StatusBar style="dark" />
     </NavigationContainer>
   );
