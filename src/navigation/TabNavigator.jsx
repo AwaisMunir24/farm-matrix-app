@@ -23,12 +23,15 @@ import PestDiseaseMobile from "../screens/Pestdiseasemobile";
 import IssueReportedMobile from "../screens/Issuereportedmobile";
 import AdvisoryMobile from "../screens/Advisorymobile";
 import HarvestingMobile from "../screens/Harvestingmobile";
+import ManagePendingUploads from "../screens/ManagePendingUploads";
 const Stack = createNativeStackNavigator();
 
-const TabNavigator = () => {
+const TabNavigator = ({ onLogout }) => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+      <Stack.Screen name="MainTabs">
+        {(props) => <BottomTabNavigator {...props} onLogout={onLogout} />}
+      </Stack.Screen>
       <Stack.Screen name="Camera" component={CameraScreen} />
       <Stack.Screen name="Result" component={ResultScreen} />
       <Stack.Screen name="Cropscan" component={CropScan} />
@@ -65,6 +68,10 @@ const TabNavigator = () => {
         options={{
           animation: "slide_from_bottom", // feels natural for a chat overlay
         }}
+      />
+      <Stack.Screen
+        name="ManagePendingUploads"
+        component={ManagePendingUploads}
       />
     </Stack.Navigator>
   );

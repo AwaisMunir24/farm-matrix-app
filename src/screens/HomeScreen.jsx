@@ -36,13 +36,13 @@ import WeatherArrow from "../../assets/weather-arrow-icon.svg";
 import axios from "axios";
 import { SERVER_URL } from "../utils/index";
 import { getAuthToken } from "../utils/auth";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import Sidebar from "../navigation/Sidebar";
 
-const HomeScreen = ({ navigation }) => {
-  const tabBarHeight = useBottomTabBarHeight();
+const HomeScreen = ({ navigation, onLogout }) => {
   const scrollViewRef = useRef(null);
   const inputRef = useRef(null);
   const [loadingWeather, setLoadingWeather] = useState(true);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   // ── NEW: controlled value for the AI input ──────────────────────────────
   const [homeInput, setHomeInput] = useState("");
@@ -177,13 +177,26 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate("Cropscan");
   };
 
+  const openDrawer = () => setDrawerVisible(true);
+  const closeDrawer = () => setDrawerVisible(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: drawerVisible ? { display: "none" } : undefined,
+    });
+
+    return () => {
+      navigation.setOptions({ tabBarStyle: undefined });
+    };
+  }, [drawerVisible, navigation]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
+        <TouchableOpacity style={styles.menuButton} onPress={openDrawer}>
           <MenuBar width={24} height={24} />
         </TouchableOpacity>
         <View style={{ width: 160, aspectRatio: 152 / 31 }}>
@@ -490,6 +503,8 @@ const HomeScreen = ({ navigation }) => {
           {/* ── End AI Assistant ─────────────────────────────────────────────── */}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Sidebar isOpen={drawerVisible} onClose={closeDrawer} onLogout={onLogout} />
     </SafeAreaView>
   );
 };

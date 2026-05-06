@@ -1,114 +1,195 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const QUEUE_KEY = "farmer_draft_queue";
+const QUEUE_KEY = "offline_sync_queue_v2";
+const listeners = new Set();
 
-// Save a farmer payload as a draft
-export const saveDraft = async (farmerPayload) => {
+const notify = () => {
+  listeners.forEach((cb) => cb());
+};
+
+export const subscribeQueueChanges = (callback) => {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+};
+
+const safeJson = async (res) => {
   try {
-    const existing = await getDrafts();
-    const draft = {
-      id: `draft_${Date.now()}`,
-      payload: farmerPayload,
-      savedAt: new Date().toISOString(),
-    };
-    const updated = [...existing, draft];
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updated));
-    return draft.id;
-  } catch (e) {
-    console.error("saveDraft error:", e);
-    throw e;
+    return await res.json();
+  } catch {
+    return {};
   }
 };
 
-// Get all pending drafts
-export const getDrafts = async () => {
-  try {
-    const raw = await AsyncStorage.getItem(QUEUE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error("getDrafts error:", e);
-    return [];
-  }
+const isConflict = (status, message = "") => {
+  if (status === 409 || status === 422) return true;
+  const m = String(message).toLowerCase();
+  return (
+    m.includes("already exists") ||
+    m.includes("duplicate") ||
+    m.includes("user_code") ||
+    m.includes("cnic already")
+  );
 };
 
-// Remove a single draft by id (after successful upload)
-export const removeDraft = async (draftId) => {
-  try {
-    const existing = await getDrafts();
-    const updated = existing.filter((d) => d.id !== draftId);
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.error("removeDraft error:", e);
-  }
-};
-
-// Sync all drafts to server — returns { uploaded, failed }
-export const syncDrafts = async (serverUrl, authToken) => {
-  const drafts = await getDrafts();
-  if (!drafts.length) return { uploaded: 0, failed: 0 };
-
-  let uploaded = 0;
-  let failed = 0;
-
-  for (const draft of drafts) {
-    try {
-      const res = await fetch(`${serverUrl}/api/user`, {
+const buildRequestForItem = (serverUrl, item, authToken) => {
+  if (item.type === "farmer_create") {
+    return {
+      url: `${serverUrl}/api/user`,
+      options: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-auth-token": authToken,
         },
-        body: JSON.stringify(draft.payload),
-      });
-      const result = await res.json();
-      if (result.success) {
-        await removeDraft(draft.id);
-        uploaded++;
-      } else {
-        failed++;
-      }
+        body: JSON.stringify(item.payload),
+      },
+    };
+  }
+
+  if (item.type === "field_create") {
+    return {
+      url: `${serverUrl}/api/field`,
+      options: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-auth-token": authToken,
+        },
+        body: JSON.stringify(item.payload),
+      },
+    };
+  }
+
+  if (item.type === "field_visit_create") {
+    const data = new FormData();
+    data.append("visit_date", item.payload.visit_date);
+    data.append("farming_activity", item.payload.farming_activity);
+    data.append("comment", item.payload.comment || "");
+    data.append("representative_id", item.payload.representative_id);
+    data.append("fieldbook_id", item.payload.fieldbook_id);
+    if (item.payload.image) {
+      data.append("images", item.payload.image);
+    }
+    return {
+      url: `${serverUrl}/api/fieldVisit`,
+      options: {
+        method: "POST",
+        headers: {
+          "x-auth-token": authToken,
+          "Content-Type": "multipart/form-data",
+        },
+        body: data,
+      },
+    };
+  }
+
+  throw new Error(`Unsupported queue type: ${item.type}`);
+};
+
+export const getQueueItems = async () => {
+  try {
+    const raw = await AsyncStorage.getItem(QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error("getQueueItems error:", e);
+    return [];
+  }
+};
+
+const saveQueueItems = async (items) => {
+  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(items));
+  notify();
+};
+
+export const enqueueItem = async ({
+  type,
+  payload,
+  meta = {},
+  localId = `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+}) => {
+  const existing = await getQueueItems();
+  const item = {
+    id: localId,
+    type,
+    payload,
+    meta,
+    savedAt: new Date().toISOString(),
+  };
+  await saveQueueItems([...existing, item]);
+  return item.id;
+};
+
+export const removeQueueItem = async (itemId) => {
+  const existing = await getQueueItems();
+  const updated = existing.filter((d) => d.id !== itemId);
+  await saveQueueItems(updated);
+};
+
+export const getPendingCounts = async () => {
+  const items = await getQueueItems();
+  return {
+    total: items.length,
+    farmer: items.filter((i) => i.type === "farmer_create").length,
+    field: items.filter((i) => i.type === "field_create").length,
+    fieldVisit: items.filter((i) => i.type === "field_visit_create").length,
+  };
+};
+
+export const syncQueueItem = async (serverUrl, authToken, item) => {
+  const { url, options } = buildRequestForItem(serverUrl, item, authToken);
+  const res = await fetch(url, options);
+  const body = await safeJson(res);
+  const ok = res.ok && (body.success !== false);
+
+  if (ok) {
+    await removeQueueItem(item.id);
+    return { status: "uploaded", body };
+  }
+
+  const message = body?.message || JSON.stringify(body?.errors || {});
+  if (isConflict(res.status, message)) {
+    await removeQueueItem(item.id);
+    return { status: "conflict", message };
+  }
+
+  return { status: "failed", message, statusCode: res.status };
+};
+
+export const syncQueue = async (serverUrl, authToken) => {
+  const items = await getQueueItems();
+  if (!items.length) {
+    return { uploaded: 0, failed: 0, conflict: 0 };
+  }
+
+  let uploaded = 0;
+  let failed = 0;
+  let conflict = 0;
+
+  for (const item of items) {
+    try {
+      const result = await syncQueueItem(serverUrl, authToken, item);
+      if (result.status === "uploaded") uploaded++;
+      if (result.status === "failed") failed++;
+      if (result.status === "conflict") conflict++;
     } catch {
       failed++;
     }
   }
 
-  return { uploaded, failed };
+  return { uploaded, failed, conflict };
 };
 
-export const debugSync = async (serverUrl, authToken) => {
-  console.log("=== DEBUG SYNC START ===");
-  console.log("SERVER_URL:", serverUrl);
-  console.log("authToken:", authToken ? `${authToken.substring(0, 20)}...` : "MISSING/NULL");
-  
-  const drafts = await getDrafts();
-  console.log("Drafts in queue:", JSON.stringify(drafts, null, 2));
-  
-  if (!drafts.length) {
-    console.log("NO DRAFTS FOUND - queue is empty");
-    return;
-  }
+// Backward compatible wrappers
+export const saveDraft = async (farmerPayload) =>
+  enqueueItem({
+    type: "farmer_create",
+    payload: farmerPayload,
+    meta: {
+      title: `${farmerPayload.first_name || ""} ${farmerPayload.last_name || ""}`.trim(),
+    },
+  });
 
-  if (!authToken) {
-    console.log("AUTH TOKEN IS NULL/UNDEFINED - this will cause 401");
-    return;
-  }
-
-  // Try syncing the first draft manually
-  const draft = drafts[0];
-  console.log("Attempting to upload draft:", draft.id);
-  try {
-    const res = await fetch(`${serverUrl}/api/user`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-auth-token": authToken,
-      },
-      body: JSON.stringify(draft.payload),
-    });
-    console.log("Response status:", res.status);
-    const result = await res.json();
-    console.log("Response body:", JSON.stringify(result, null, 2));
-  } catch (e) {
-    console.error("Fetch error:", e.message);
-  }
-};
+export const getDrafts = async () => getQueueItems();
+export const removeDraft = async (draftId) => removeQueueItem(draftId);
+export const syncDrafts = async (serverUrl, authToken) =>
+  syncQueue(serverUrl, authToken);

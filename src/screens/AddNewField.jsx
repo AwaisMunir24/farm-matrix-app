@@ -15,12 +15,19 @@ import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
-import MapView, { Polygon, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { LocalTile, Polygon, PROVIDER_GOOGLE } from "react-native-maps";
 import axios from "axios";
 import Drawpolygon from "../../assets/draw-polygon.svg";
 import { SERVER_URL } from "../utils/index";
 import tehsilData from "../utils/TehsilData.json";
 import { getAuthToken } from "../utils/auth";
+import NetInfo from "@react-native-community/netinfo";
+import { enqueueItem } from "../utils/offlineQueue";
+import {
+  getAddFieldOfflineReference,
+  prepareAddFieldOfflineReference,
+} from "../utils/offlineReferenceData";
+import { getOfflineMapTilePathTemplate } from "../utils/offlineMapTiles";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -125,6 +132,8 @@ const AddNewField = ({ navigation, route }) => {
   const [loadingCrops, setLoadingCrops] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiResponse, setApiResponse] = useState(null); // { status, data, isError }
+  const [isOffline, setIsOffline] = useState(false);
+  const [tilePathTemplate, setTilePathTemplate] = useState(null);
 
   // ── Form state ────────────────────────────────────────────────────────────
   const [form, setForm] = useState(EMPTY_FORM);
@@ -166,10 +175,9 @@ const AddNewField = ({ navigation, route }) => {
   // ─────────────────────────────────────────────────────────────────────────
 
   /** Fetch all farmers */
-  const fetchFarmers = async () => {
+  const fetchFarmers = async (token) => {
     setLoadingFarmers(true);
     try {
-      const token = getAuthToken();
       const resp = await axios.get(
         `${SERVER_URL}/api/farmers?page=1&limit=10000&search=&sortBy=id&order=ASC`,
         {
@@ -198,10 +206,9 @@ const AddNewField = ({ navigation, route }) => {
   };
 
   /** Fetch all clusters */
-  const fetchClusters = async () => {
+  const fetchClusters = async (token) => {
     setLoadingClusters(true);
     try {
-      const token = getAuthToken();
       const resp = await fetch(`${SERVER_URL}/api/cluster?limit=10000000`, {
         headers: { "x-auth-token": token },
       });
@@ -215,10 +222,9 @@ const AddNewField = ({ navigation, route }) => {
   };
 
   /** Fetch all representatives (employees) */
-  const fetchRepresentatives = async () => {
+  const fetchRepresentatives = async (token) => {
     setLoadingReps(true);
     try {
-      const token = getAuthToken();
       const resp = await fetch(
         `${SERVER_URL}/api/user/employee?limit=10000000`,
         {
@@ -235,10 +241,10 @@ const AddNewField = ({ navigation, route }) => {
   };
 
   /** Fetch crop types for a given category */
-  const fetchCropTypes = async (category) => {
+  const fetchCropTypes = async (category, tokenOverride = null) => {
     setLoadingCrops(true);
     try {
-     const token = await getAuthToken();
+      const token = tokenOverride || (await getAuthToken());
       const resp = await axios.get(
         `${SERVER_URL}/api/cropType/category/${category}`,
         {
@@ -261,9 +267,68 @@ const AddNewField = ({ navigation, route }) => {
 
   // Mount: fetch farmers, clusters, reps
   useEffect(() => {
-    fetchFarmers();
-    fetchClusters();
-    fetchRepresentatives();
+    const init = async () => {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const netState = await NetInfo.fetch();
+      const isOnline =
+        netState.isConnected && netState.isInternetReachable !== false;
+
+      if (isOnline) {
+        await Promise.all([
+          fetchFarmers(token),
+          fetchClusters(token),
+          fetchRepresentatives(token),
+        ]);
+        try {
+          const ref = await prepareAddFieldOfflineReference({ token });
+          setFarmerOptions(ref.farmers || []);
+          setClusters(ref.clusters || []);
+          setRepresentativeList(ref.representatives || []);
+        } catch (e) {
+          console.error("prepareAddFieldOfflineReference:", e);
+        }
+      } else {
+        const ref = await getAddFieldOfflineReference();
+        if (!ref) {
+          Alert.alert(
+            "Offline data missing",
+            "Please use 'Prepare Offline Data' from sidebar before going offline.",
+          );
+          return;
+        }
+        setFarmerOptions(ref.farmers || []);
+        setClusters(ref.clusters || []);
+        setRepresentativeList(ref.representatives || []);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online =
+        state?.isConnected && state?.isInternetReachable !== false;
+      setIsOffline(!online);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadTemplate = async () => {
+      try {
+        const template = await getOfflineMapTilePathTemplate();
+        if (mounted) setTilePathTemplate(template);
+      } catch (e) {
+        console.error("load offline map template error:", e);
+      }
+    };
+    loadTemplate();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -286,7 +351,17 @@ const AddNewField = ({ navigation, route }) => {
       setCropTypes([]);
     } else if (value) {
       setIsOtherCrop(false);
-      fetchCropTypes(value);
+      NetInfo.fetch().then((net) => {
+        const isOnline = net.isConnected && net.isInternetReachable !== false;
+        if (isOnline) {
+          fetchCropTypes(value);
+        } else {
+          getAddFieldOfflineReference().then((ref) => {
+            const offlineCrops = ref?.cropTypesByCategory?.[value] || [];
+            setCropTypes(offlineCrops);
+          });
+        }
+      });
     } else {
       setIsOtherCrop(false);
       setCropTypes([]);
@@ -382,13 +457,30 @@ const AddNewField = ({ navigation, route }) => {
     setIsSubmitting(true);
 
     try {
-      const token = getAuthToken();
+      const token = await getAuthToken();
       const payload = preparePayload();
 
       console.log("📦 Payload:");
       console.log(JSON.stringify(payload, null, 2));
       console.log("🌐 URL:", `${SERVER_URL}/api/field`);
       console.log("🔑 Token:", token);
+
+      const net = await NetInfo.fetch();
+      const isOnline = net.isConnected && net.isInternetReachable !== false;
+
+      if (!isOnline) {
+        await enqueueItem({
+          type: "field_create",
+          payload,
+          meta: { title: payload.field_name || "Field draft" },
+        });
+        Alert.alert(
+          "Saved offline",
+          "Field has been saved locally and will be uploaded when internet is available.",
+          [{ text: "OK", onPress: () => navigation.replace("MainTabs") }],
+        );
+        return;
+      }
 
       const response = await axios.post(`${SERVER_URL}/api/field`, payload, {
         headers: { "x-auth-token": token, "Content-Type": "application/json" },
@@ -454,6 +546,7 @@ const AddNewField = ({ navigation, route }) => {
   // ─────────────────────────────────────────────────────────────────────────
 
   const goBack = () => navigation.replace("MainTabs");
+  const useLocalTiles = Boolean(isOffline && tilePathTemplate);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -487,7 +580,7 @@ const AddNewField = ({ navigation, route }) => {
                   <MapView
                     style={styles.miniMap}
                     provider={PROVIDER_GOOGLE}
-                    mapType="hybrid"
+                    mapType={useLocalTiles ? "none" : "standard"}
                     region={polygonRegion}
                     scrollEnabled={false}
                     zoomEnabled={false}
@@ -495,6 +588,13 @@ const AddNewField = ({ navigation, route }) => {
                     pitchEnabled={false}
                     pointerEvents="none"
                   >
+                    {useLocalTiles && (
+                      <LocalTile
+                        pathTemplate={tilePathTemplate}
+                        tileSize={256}
+                        zIndex={0}
+                      />
+                    )}
                     <Polygon
                       coordinates={polygonCoordinates}
                       fillColor="rgba(57,181,75,0.25)"

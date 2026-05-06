@@ -22,6 +22,11 @@ import tehsilData from "../utils/TehsilData.json"; // ← your JSON file
 import { getAuthUser } from "../utils/auth"; // ← centralized auth
 import NetInfo from "@react-native-community/netinfo";
 import { saveDraft } from "../utils/offlineQueue";
+import {
+  consumeOfflineFarmerCode,
+  getAddFarmerOfflineReference,
+  prepareAddFarmerOfflineReference,
+} from "../utils/offlineReferenceData";
 // ─── Flatten tehsil JSON into a searchable list ───────────────────────────────
 // Each item: { name, district, division, province }
 const ALL_TEHSILS = tehsilData.provinces.flatMap((province) =>
@@ -241,22 +246,62 @@ const AddNewFarmer = ({ navigation }) => {
   const responsivityOptions = ["High", "Medium", "Low"];
   const dataKnowledgeOptions = ["Complete", "Partial", "None"];
 
+  const applyReferenceData = (reference) => {
+    setClusters(reference?.clusters || []);
+    setOrganizations(reference?.organizations || []);
+    const code = reference?.nextFarmerCode || "";
+    setNextFarmerCode(code);
+    setFarmerData((prev) => ({
+      ...prev,
+      farmerCode: prev.farmerCode || code,
+    }));
+  };
+
   // ── Load user + fetch initial data
   useEffect(() => {
     (async () => {
       try {
         const user = await getAuthUser(); // ← uses auth.js (static or dynamic)
-        if (user) {
-          setUserRole(user.role);
-          setUserId(user.id);
-          setAuthToken(user.token);
-          await Promise.all([
-            fetchClusters(user.token),
-            fetchNextFarmerCode(user.token),
-            user.role === "admin"
-              ? fetchOrganizations(user.token)
-              : Promise.resolve(),
-          ]);
+        if (!user) return;
+
+        setUserRole(user.role);
+        setUserId(user.id);
+        setAuthToken(user.token);
+
+        const netState = await NetInfo.fetch();
+        const isOnline =
+          netState.isConnected && netState.isInternetReachable !== false;
+
+        if (isOnline) {
+          try {
+            const reference = await prepareAddFarmerOfflineReference({
+              token: user.token,
+              userRole: user.role,
+            });
+            applyReferenceData(reference);
+          } catch (onlineError) {
+            // Fallback to local backup if server fetch fails
+            const cached = await getAddFarmerOfflineReference();
+            if (cached) {
+              applyReferenceData(cached);
+              Alert.alert(
+                "Offline backup used",
+                "Could not refresh latest lists from server. Loaded previously backed-up data.",
+              );
+            } else {
+              throw onlineError;
+            }
+          }
+        } else {
+          const cached = await getAddFarmerOfflineReference();
+          if (cached) {
+            applyReferenceData(cached);
+          } else {
+            Alert.alert(
+              "Offline data missing",
+              "No internet and no local backup found. Please use 'Prepare Offline Data' once before going offline.",
+            );
+          }
         }
       } catch (e) {
         console.error("Init error:", e);
@@ -265,48 +310,6 @@ const AddNewFarmer = ({ navigation }) => {
       }
     })();
   }, []);
-
-  const fetchClusters = async (token) => {
-    try {
-      const res = await fetch(`${SERVER_URL}/api/cluster?limit=10000000`, {
-        headers: { "x-auth-token": token },
-      });
-      const json = await res.json();
-      if (json.success) setClusters(json.data);
-    } catch (e) {
-      console.error("fetchClusters error:", e);
-    }
-  };
-
-  const fetchOrganizations = async (token) => {
-    try {
-      const res = await fetch(
-        `${SERVER_URL}/api/organization?page=1&limit=1000000`,
-        {
-          headers: { "x-auth-token": token },
-        },
-      );
-      const json = await res.json();
-      if (json.success) setOrganizations(json.data);
-    } catch (e) {
-      console.error("fetchOrganizations error:", e);
-    }
-  };
-
-  const fetchNextFarmerCode = async (token) => {
-    try {
-      const res = await fetch(`${SERVER_URL}/api/farmers/code/get`, {
-        headers: { "x-auth-token": token },
-      });
-      const json = await res.json();
-      if (json.success) {
-        setNextFarmerCode(json.nextFarmerCode);
-        setFarmerData((prev) => ({ ...prev, farmerCode: json.nextFarmerCode }));
-      }
-    } catch (e) {
-      console.error("fetchNextFarmerCode error:", e);
-    }
-  };
 
   const setField = (key, value) => {
     setFarmerData((prev) => ({ ...prev, [key]: value }));
@@ -406,19 +409,27 @@ const handleSave = async () => {
 
   // ── Check connectivity first ──
   const netState = await NetInfo.fetch();
-  const isOnline = netState.isConnected && netState.isInternetReachable;
+  // `isInternetReachable` can be null briefly on mobile networks.
+  // Treat only explicit `false` as offline to avoid false offline saves.
+  const isOnline =
+    netState.isConnected && netState.isInternetReachable !== false;
 
   if (!isOnline) {
     // Save to draft queue
     setLoading(true);
     try {
       await saveDraft(farmerPayload);
+      const consumed = await consumeOfflineFarmerCode();
+      if (consumed?.nextCode) {
+        setNextFarmerCode(consumed.nextCode);
+      }
       Alert.alert(
         "Saved as Draft",
         "No internet connection. Farmer has been saved locally and will upload automatically when you're back online.",
         [{ text: "OK", onPress: () => navigation.replace("MainTabs") }]
       );
-    } catch {
+    } catch (error) {
+      console.error("saveDraft failed:", error);
       Alert.alert("Error", "Could not save draft. Please try again.");
     } finally {
       setLoading(false);

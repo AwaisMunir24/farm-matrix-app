@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-  Image,
   StyleSheet,
   View,
   TouchableOpacity,
   Dimensions,
+  Animated,
+  Text,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -21,30 +22,24 @@ const { width } = Dimensions.get("window");
 
 const TAB_BAR_HEIGHT = 92;
 const CURVE_HEIGHT = 20; // total extra height for the wave area
-const cx = width / 2; // horizontal center
+const FLOAT_BUTTON_SIZE = 72;
 
-//  Wave shape explanation:
-//  Starts flat from left → slopes DOWN into a deep wide U → slopes back UP → flat to right
-//  Uses cubic bezier (C) for very smooth, gradual, natural-looking curves
-const TabBarBackground = () => {
+const buildWavePath = (centerX) => {
   const w = width;
   const h = TAB_BAR_HEIGHT + CURVE_HEIGHT;
-
-  // Key X positions
-
-  const waveStartX = cx - 85; // where left slope begins
-  const waveEndX = cx + 85; // where right slope ends
+  const waveStartX = centerX - 85; // where left slope begins
+  const waveEndX = centerX + 85; // where right slope ends
   const dipY = CURVE_HEIGHT + 52; // how low the bottom of the U goes
 
-  const path = `
+  return `
     M0,${CURVE_HEIGHT}
     L${waveStartX},${CURVE_HEIGHT}
 
     C${waveStartX + 40},${CURVE_HEIGHT}
-     ${cx - 52},${dipY}
-     ${cx},${dipY}
+     ${centerX - 52},${dipY}
+     ${centerX},${dipY}
 
-    C${cx + 52},${dipY}
+    C${centerX + 52},${dipY}
      ${waveEndX - 40},${CURVE_HEIGHT}
      ${waveEndX},${CURVE_HEIGHT}
 
@@ -53,100 +48,144 @@ const TabBarBackground = () => {
     L0,${h}
     Z
   `;
+};
+
+const TabBarBackground = ({ activeIndex, routesCount }) => {
+  const slotWidth = width / routesCount;
+  const targetCenter = slotWidth * activeIndex + slotWidth / 2;
+  const path = buildWavePath(targetCenter);
 
   return (
     <View style={styles.svgContainer} pointerEvents="none">
-      <Svg width={w} height={h}>
+      <Svg width={width} height={TAB_BAR_HEIGHT + CURVE_HEIGHT}>
         <Path d={path} fill="#FFFFFF" />
       </Svg>
     </View>
   );
 };
 
-const CustomHomeButton = ({ children, onPress }) => (
-  <TouchableOpacity
-    style={styles.customButtonWrapper}
-    onPress={onPress}
-    activeOpacity={0.85}
-  >
-    <LinearGradient
-      colors={["#5FD66E", "#34B349"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={styles.customButtonCircle}
-    >
-      {children}
-    </LinearGradient>
-  </TouchableOpacity>
-);
+const getTabIcon = (routeName, size = 26, color = "#383838") => {
+  if (routeName === "Fields Map")
+    return <MyProfile width={size} height={size} color={color} />;
+  if (routeName === "Profile")
+    return <ProfileIcon width={size} height={size} color={color} />;
+  return <HomeIcon width={size} height={size} color={color} />;
+};
 
-const BottomTabNavigator = () => {
+const CustomTabBar = ({ state, descriptors, navigation }) => {
+  const focusedOptions = descriptors[state.routes[state.index].key]?.options;
+  const focusedTabBarStyle = focusedOptions?.tabBarStyle;
+  const normalizedTabBarStyles = Array.isArray(focusedTabBarStyle)
+    ? focusedTabBarStyle
+    : focusedTabBarStyle
+      ? [focusedTabBarStyle]
+      : [];
+  const shouldHideTabBar = normalizedTabBarStyles.some(
+    (style) => style && style.display === "none",
+  );
+
+  if (shouldHideTabBar) {
+    return null;
+  }
+
+  const routesCount = state.routes.length;
+  const slotWidth = width / routesCount;
+  const activeIndex = state.index;
+  const activeCenter = slotWidth * activeIndex + slotWidth / 2;
+  const bubbleLeft = activeCenter - FLOAT_BUTTON_SIZE / 2;
+  const bubbleScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    bubbleScale.setValue(0.9);
+    Animated.spring(bubbleScale, {
+      toValue: 1,
+      friction: 8,
+      tension: 130,
+      useNativeDriver: true,
+    }).start();
+  }, [activeIndex, bubbleScale]);
+
+  return (
+    <View style={styles.customTabBarContainer}>
+      <TabBarBackground activeIndex={activeIndex} routesCount={routesCount} />
+
+      <Animated.View
+        style={[
+          styles.floatingActiveButton,
+          { left: bubbleLeft, transform: [{ scale: bubbleScale }] },
+        ]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={["#5FD66E", "#34B349"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.customButtonCircle}
+        >
+          {getTabIcon(state.routes[activeIndex].name, 28, "#FFFFFF")}
+        </LinearGradient>
+      </Animated.View>
+
+      <View style={styles.tabsRow}>
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const label = options.tabBarLabel ?? options.title ?? route.name;
+          const isFocused = state.index === index;
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              onPress={onPress}
+              style={styles.tabItem}
+              activeOpacity={0.85}
+            >
+              <View style={styles.iconArea}>
+                {!isFocused && getTabIcon(route.name, 24, "#383838")}
+              </View>
+              <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
+const BottomTabNavigator = ({ onLogout }) => {
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#39B54B",
-        tabBarInactiveTintColor: "#383838",
         tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIconStyle: styles.tabBarIcon,
-        tabBarBackground: () => <TabBarBackground />,
-        tabBarIconStyle: {
-          marginBottom: 4,
-        },
       }}
+      tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tab.Screen
         name="Fields Map"
         component={MyFieldsScreen}
-        options={{
-          tabBarItemStyle: {
-            paddingLeft: 35,
-          },
-
-          tabBarIcon: ({ focused }) => <MyProfile width={24} height={24} />,
-        }}
       />
 
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: () => null,
-          tabBarButton: (props) => <CustomHomeButton {...props} />,
-          tabBarIcon: () => (
-            // <Image
-            //   source={require("../../assets/home.png")}
-            //   style={styles.homeIcon}
-            //   resizeMode="contain"
-            // />
-            <HomeIcon width={28} height={28} />
-          ),
-        }}
-      />
+      <Tab.Screen name="Home">
+        {(props) => <HomeScreen {...props} onLogout={onLogout} />}
+      </Tab.Screen>
 
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarItemStyle: {
-            paddingRight: 35,
-            marginBottom: 6,
-          },
-          tabBarIcon: ({ focused }) => (
-            // <Image
-            //   source={require("../../assets/profile.png")}
-            //   style={[
-            //     styles.icon,
-            //     { tintColor: focused ? "#39B54B" : "#383838" },
-            //   ]}
-            //   resizeMode="contain"
-            // />
-            <ProfileIcon width={28} height={28} />
-          ),
-        }}
-      />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
@@ -156,23 +195,16 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderTopWidth: 0,
     height: TAB_BAR_HEIGHT + CURVE_HEIGHT,
-    paddingBottom: 12,
-    paddingTop: CURVE_HEIGHT + 14, // push labels/icons below the wave dip
     position: "absolute",
     elevation: 0,
     shadowOpacity: 0,
   },
-  tabBarLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#383838",
-  },
-  tabBarIcon: {
-    marginBottom: -4,
-  },
-  icon: {
-    width: 24,
-    height: 24,
+  customTabBarContainer: {
+    height: TAB_BAR_HEIGHT + CURVE_HEIGHT,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 
   svgContainer: {
@@ -185,18 +217,46 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.07,
     shadowRadius: 12,
   },
-
-  // Button sits inside the deep U curve
-  customButtonWrapper: {
-    top: -(CURVE_HEIGHT + 32), // floats up so circle sits in the wave
+  tabsRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingTop: CURVE_HEIGHT + 14,
+    paddingBottom: 12,
+    height: TAB_BAR_HEIGHT + CURVE_HEIGHT,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  iconArea: {
+    height: 34,
     justifyContent: "center",
     alignItems: "center",
-    width: 70,
-    marginHorizontal: "auto",
+    marginBottom: 2,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#383838",
+    marginBottom: 2,
+    textTransform: "capitalize",
+  },
+  tabLabelActive: {
+    color: "#222222",
+    fontWeight: "600",
+  },
+  floatingActiveButton: {
+    position: "absolute",
+    top: -(CURVE_HEIGHT + 24),
+    width: FLOAT_BUTTON_SIZE,
+    height: FLOAT_BUTTON_SIZE,
+    zIndex: 5,
   },
   customButtonCircle: {
-    width: 72,
-    height: 72,
+    width: FLOAT_BUTTON_SIZE,
+    height: FLOAT_BUTTON_SIZE,
     borderRadius: 36,
     justifyContent: "center",
     alignItems: "center",
@@ -205,12 +265,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.55,
     shadowRadius: 14,
     elevation: 14,
-  },
-
-  homeIcon: {
-    width: 28,
-    height: 28,
-    tintColor: "#FFFFFF",
   },
 });
 

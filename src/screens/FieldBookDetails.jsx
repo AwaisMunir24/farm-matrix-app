@@ -21,6 +21,12 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import { getAuthToken } from "../utils/auth";
 import { SERVER_URL } from "../utils/index";
+import NetInfo from "@react-native-community/netinfo";
+import { enqueueItem } from "../utils/offlineQueue";
+import {
+  getFieldBookOfflineSnapshot,
+  saveFieldBookOfflineSnapshot,
+} from "../utils/offlineReferenceData";
 import FarmingSliderMobile from "../components/FarmingSliderMobile";
 import UploadImageIcon from "../../assets/upload_img.svg";
 import SeedDetailsMobile from "./SeedDetailMobile";
@@ -169,27 +175,38 @@ const FieldBookDetails = ({ navigation, route }) => {
 
   const fetchFieldBookData = () => {
     setIsLoading(true);
-    getAuthToken().then((token) => {
-      axios
-        .get(`${SERVER_URL}/api/fieldbook/field/${fieldId}`, {
+    getAuthToken()
+      .then((token) => {
+        return axios.get(`${SERVER_URL}/api/fieldbook/field/${fieldId}`, {
           headers: {
             "Content-Type": "application/json",
             "x-auth-token": token,
           },
-        })
-        .then((resp) => {
-          const data = resp.data.data;
-          console.log(data, "data<============");
-          setFieldBookData(data);
-          setMainFieldBookDetails(data.field);
-          setGettingIds(data);
-        })
-        .catch((err) => {
-          console.error("fetchFieldBookData error:", err);
+        });
+      })
+      .then((resp) => {
+        const data = resp.data.data;
+        setFieldBookData(data);
+        setMainFieldBookDetails(data.field);
+        setGettingIds(data);
+        return saveFieldBookOfflineSnapshot({ fieldId, data });
+      })
+      .catch(async (err) => {
+        console.error("fetchFieldBookData error:", err);
+        const snapshot = await getFieldBookOfflineSnapshot(fieldId);
+        if (snapshot?.data) {
+          setFieldBookData(snapshot.data);
+          setMainFieldBookDetails(snapshot.data.field);
+          setGettingIds(snapshot.data);
+          Alert.alert(
+            "Offline mode",
+            "Loaded last available field book data from local backup.",
+          );
+        } else {
           Alert.alert("Error", "Failed to load field book details.");
-        })
-        .finally(() => setIsLoading(false));
-    });
+        }
+      })
+      .finally(() => setIsLoading(false));
   };
 
   // ── Image picker ──────────────────────────────────────────────────────────
@@ -255,39 +272,61 @@ const FieldBookDetails = ({ navigation, route }) => {
 
     setIsSaving(true);
 
-    getAuthToken().then((token) => {
-      const formDataToSend = new FormData();
-      formDataToSend.append("visit_date", formData.date);
-      formDataToSend.append("farming_activity", formData.farmingActivity);
-      formDataToSend.append("comment", formData.comment);
-      formDataToSend.append("representative_id", gettingIds?.representative_id);
-      formDataToSend.append("fieldbook_id", gettingIds?.id);
+    Promise.all([getAuthToken(), NetInfo.fetch()])
+      .then(async ([token, net]) => {
+        const isOnline = net.isConnected && net.isInternetReachable !== false;
+        const visitPayload = {
+          visit_date: formData.date,
+          farming_activity: formData.farmingActivity,
+          comment: formData.comment,
+          representative_id: gettingIds?.representative_id,
+          fieldbook_id: gettingIds?.id,
+          image: selectedFile || null,
+        };
 
-      if (selectedFile) {
-        formDataToSend.append("images", selectedFile); // key "images" same as web
-      }
+        if (!isOnline) {
+          await enqueueItem({
+            type: "field_visit_create",
+            payload: visitPayload,
+            meta: { title: `Field visit ${formData.date}` },
+          });
+          Alert.alert(
+            "Saved offline",
+            "Field visit saved locally and will upload automatically when online.",
+          );
+          setFormData({ date: "", farmingActivity: "", comment: "" });
+          setSelectedDate(null);
+          setSelectedFile(null);
+          return;
+        }
 
-      axios
-        .post(`${SERVER_URL}/api/fieldVisit`, formDataToSend, {
+        const formDataToSend = new FormData();
+        formDataToSend.append("visit_date", formData.date);
+        formDataToSend.append("farming_activity", formData.farmingActivity);
+        formDataToSend.append("comment", formData.comment);
+        formDataToSend.append("representative_id", gettingIds?.representative_id);
+        formDataToSend.append("fieldbook_id", gettingIds?.id);
+        if (selectedFile) formDataToSend.append("images", selectedFile);
+
+        return axios.post(`${SERVER_URL}/api/fieldVisit`, formDataToSend, {
           headers: {
             "Content-Type": "multipart/form-data",
             "x-auth-token": token,
           },
-        })
-        .then((resp) => {
-          console.log("✅ Field visit saved successfully:", resp.data); // ✅ log added
-          Alert.alert("Success", "Field visit saved successfully!");
-
-          setFormData({ date: "", farmingActivity: "", comment: "" });
-          setSelectedDate(null);
-          setSelectedFile(null);
-        })
-        .catch((err) => {
-          console.error("handleSave error:", err);
-          Alert.alert("Error", "Error saving field visit.");
-        })
-        .finally(() => setIsSaving(false));
-    });
+        });
+      })
+      .then((resp) => {
+        if (!resp) return;
+        Alert.alert("Success", "Field visit saved successfully!");
+        setFormData({ date: "", farmingActivity: "", comment: "" });
+        setSelectedDate(null);
+        setSelectedFile(null);
+      })
+      .catch((err) => {
+        console.error("handleSave error:", err);
+        Alert.alert("Error", "Error saving field visit.");
+      })
+      .finally(() => setIsSaving(false));
   };
 
   // ── Derived values ────────────────────────────────────────────────────────

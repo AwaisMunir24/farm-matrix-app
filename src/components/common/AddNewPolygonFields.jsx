@@ -8,12 +8,20 @@ import {
   Alert,
 } from "react-native";
 import MapView, {
+  LocalTile,
   Marker,
   Polygon,
   Polyline,
   PROVIDER_GOOGLE,
 } from "react-native-maps";
 import * as Location from "expo-location";
+import NetInfo from "@react-native-community/netinfo";
+import {
+  boundsToMapRegion,
+  getOfflineCoverageInspector,
+  getOfflineMapTilePathTemplate,
+  getTileCoverageStatus,
+} from "../../utils/offlineMapTiles";
 
 const { height } = Dimensions.get("window");
 const MAP_HEIGHT = height * 0.62;
@@ -80,6 +88,11 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
   const [points, setPoints] = useState([]);
   const [isClosed, setIsClosed] = useState(false);
   const [region, setRegion] = useState(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [tilePathTemplate, setTilePathTemplate] = useState(null);
+  const [coverageStatus, setCoverageStatus] = useState(null);
+  const [inspector, setInspector] = useState({ preparedAt: null, regions: [] });
+  const [jumpingRegionId, setJumpingRegionId] = useState(null);
 
   const areaInAcres = isClosed ? calculatePolygonAreaInAcres(points) : 0;
 
@@ -109,6 +122,98 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
       mapRef.current?.animateToRegion(userRegion, 800);
     })();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online =
+        state?.isConnected && state?.isInternetReachable !== false;
+      setIsOffline(!online);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadTileTemplate = async () => {
+      try {
+        const template = await getOfflineMapTilePathTemplate();
+        if (mounted) setTilePathTemplate(template);
+      } catch (e) {
+        console.error("load offline tile template error:", e);
+      }
+    };
+    loadTileTemplate();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!region) return;
+    getTileCoverageStatus({
+      latitude: region.latitude,
+      longitude: region.longitude,
+    }).then(setCoverageStatus);
+  }, [region]);
+
+  useEffect(() => {
+    const loadInspector = async () => {
+      const data = await getOfflineCoverageInspector();
+      setInspector(data);
+    };
+    loadInspector();
+  }, [tilePathTemplate]);
+
+  const jumpToRegion = (item) => {
+    const minLat = Number(item?.bounds?.minLat);
+    const maxLat = Number(item?.bounds?.maxLat);
+    const minLon = Number(item?.bounds?.minLon);
+    const maxLon = Number(item?.bounds?.maxLon);
+    const safeBounds =
+      Number.isFinite(minLat) &&
+      Number.isFinite(maxLat) &&
+      Number.isFinite(minLon) &&
+      Number.isFinite(maxLon)
+        ? { minLat, maxLat, minLon, maxLon }
+        : null;
+    const target = boundsToMapRegion(safeBounds, 1.25);
+    if (!target || !mapRef.current) {
+      Alert.alert("Jump unavailable", "Could not locate this cached cluster region.");
+      return;
+    }
+    setJumpingRegionId(item?.id || null);
+
+    const corners = [
+      { latitude: minLat, longitude: minLon },
+      { latitude: minLat, longitude: maxLon },
+      { latitude: maxLat, longitude: minLon },
+      { latitude: maxLat, longitude: maxLon },
+    ];
+
+    try {
+      mapRef.current.fitToCoordinates(corners, {
+        edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+        animated: true,
+      });
+      // Ensure camera movement on some Android devices where fitToCoordinates is ignored.
+      setTimeout(() => mapRef.current?.animateCamera({ center: target, zoom: 14 }, { duration: 450 }), 80);
+      setTimeout(() => mapRef.current?.animateToRegion(target, 500), 180);
+      setRegion(target);
+    } catch (e) {
+      console.error("jumpToRegion error:", e);
+      mapRef.current?.animateCamera({ center: target, zoom: 14 }, { duration: 600 });
+      mapRef.current?.animateToRegion(target, 700);
+      setRegion(target);
+    } finally {
+      setTimeout(() => setJumpingRegionId(null), 900);
+    }
+  };
+
+  const statusColor = (status) => {
+    if (status === "complete") return "#16A34A";
+    if (status === "partial") return "#D97706";
+    return "#DC2626";
+  };
 
   // ── Tap handler
   const handleMapPress = useCallback(
@@ -188,6 +293,7 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
     }
     return segs;
   }, [points, isClosed]);
+  const useLocalTiles = Boolean(isOffline && tilePathTemplate);
 
   if (!region) {
     return (
@@ -253,13 +359,78 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
         </View>
       )}
 
+      {isOffline && (
+        <View style={styles.offlineHint}>
+          <View style={styles.offlineDot} />
+          <Text style={styles.offlineHintText}>
+            Offline mode:{" "}
+            {tilePathTemplate
+              ? "cached map tiles loaded."
+              : "no cached map tiles found (tap Prepare Offline Data)."}{" "}
+            Coverage:{" "}
+            {coverageStatus?.covered
+              ? coverageStatus.coveredRegionName || "covered"
+              : "not covered for this location"}.
+          </Text>
+        </View>
+      )}
+
+      {isOffline && (
+        <View style={styles.inspectorCard}>
+          <Text style={styles.inspectorTitle}>Offline Coverage Inspector</Text>
+          <Text style={styles.inspectorSub}>
+            Status by cluster cache and quick jump
+          </Text>
+          {inspector.regions.length === 0 ? (
+            <Text style={styles.inspectorEmptyText}>
+              No cached clusters found. Use Prepare Offline Data first.
+            </Text>
+          ) : (
+            <View style={styles.inspectorList}>
+              {inspector.regions.map((item) => (
+                <View key={item.id} style={styles.inspectorRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.inspectorName}>{item.name}</Text>
+                    <Text style={styles.inspectorMeta}>
+                      {item.completionPct}% • {item.cached + item.downloaded}/
+                      {item.planned} tiles
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${statusColor(item.status)}20` },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.statusBadgeText, { color: statusColor(item.status) }]}
+                    >
+                      {item.status.toUpperCase()}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.jumpBtn}
+                    onPress={() => jumpToRegion(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.jumpBtnText}>
+                      {jumpingRegionId === item.id ? "Jumping..." : "Jump"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
       {/* ── Map ── */}
       <View style={styles.mapWrap}>
         <MapView
           ref={mapRef}
           style={styles.map}
           provider={PROVIDER_GOOGLE}
-          mapType="hybrid"
+          mapType={useLocalTiles ? "none" : "standard"}
           initialRegion={region}
           onPress={handleMapPress}
           showsUserLocation
@@ -269,6 +440,10 @@ const AddNewPolygonFields = ({ onPolygonComplete }) => {
           pitchEnabled={false}
           toolbarEnabled={false}
         >
+          {useLocalTiles && (
+            <LocalTile pathTemplate={tilePathTemplate} tileSize={256} zIndex={0} />
+          )}
+
           {/* Drawing polyline */}
           {!isClosed && points.length > 1 && (
             <Polyline
@@ -473,6 +648,96 @@ const styles = StyleSheet.create({
     backgroundColor: "#39B54B",
   },
   hintText: { fontSize: 12, color: "#15803D", fontWeight: "500", flex: 1 },
+  offlineHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: "#2563EB",
+    gap: 8,
+  },
+  offlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#2563EB",
+  },
+  offlineHintText: { fontSize: 12, color: "#1D4ED8", fontWeight: "500", flex: 1 },
+  inspectorCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+  },
+  inspectorTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  inspectorSub: {
+    fontSize: 10,
+    color: "#6B7280",
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  inspectorList: {
+    gap: 6,
+  },
+  inspectorEmptyText: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  inspectorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    gap: 7,
+  },
+  inspectorName: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1F2937",
+  },
+  inspectorMeta: {
+    fontSize: 10,
+    color: "#6B7280",
+    marginTop: 1,
+  },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  statusBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+  jumpBtn: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+  jumpBtnText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#4338CA",
+  },
 
   // Map
   mapWrap: {
