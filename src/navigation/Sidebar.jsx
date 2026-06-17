@@ -20,10 +20,7 @@ import RightSubmenu from "../../assets/submenu.svg";
 import { clearAuthUser } from "../utils/auth";
 import { getAuthUser } from "../utils/auth";
 import Uparrow from "../../assets/uparrow-sidevar.svg";
-import {
-  getPendingCounts,
-  subscribeQueueChanges,
-} from "../utils/offlineQueue";
+import { getPendingCounts, subscribeQueueChanges } from "../utils/offlineQueue";
 import {
   getAddFieldOfflineReference,
   getOfflinePreparationSummary,
@@ -144,10 +141,14 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
       currentLocation,
       radiusKm: 3,
     });
-    const clusterRegions = regions.filter((r) => String(r.source).startsWith("cluster"));
+    const clusterRegions = regions.filter((r) =>
+      String(r.source).startsWith("cluster"),
+    );
     setOfflineRegions(clusterRegions);
     setSelectedRegionIds((prev) => {
-      const validPrev = prev.filter((id) => clusterRegions.some((r) => r.id === id));
+      const validPrev = prev.filter((id) =>
+        clusterRegions.some((r) => r.id === id),
+      );
       if (validPrev.length) return validPrev;
       return clusterRegions.map((region) => region.id);
     });
@@ -279,7 +280,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
         token: user.token,
         userRole: user.role,
       });
-      const fieldRef = await prepareAddFieldOfflineReference({ token: user.token });
+      const fieldRef = await prepareAddFieldOfflineReference({
+        token: user.token,
+      });
 
       const currentLocation = await getCurrentLocationSafe();
 
@@ -378,7 +381,7 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
     {
       label: "AI Ask Assistant",
       icon: "🤖",
-      screen: "Chat",
+      screen: "Conversation",
     },
   ];
 
@@ -436,7 +439,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
                 <Text style={styles.menuLabel}>{item.label}</Text>
                 {item.label === "Upload Survey" && pendingCounts.total > 0 && (
                   <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingBadgeText}>{pendingCounts.total}</Text>
+                    <Text style={styles.pendingBadgeText}>
+                      {pendingCounts.total}
+                    </Text>
                   </View>
                 )}
 
@@ -512,9 +517,13 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
             <View style={styles.preparingOfflineWrap}>
               <ActivityIndicator color="#39B54B" size="small" />
               {offlinePrepProgress ? (
-                <Text style={styles.preparingOfflineText}>{offlinePrepProgress}</Text>
+                <Text style={styles.preparingOfflineText}>
+                  {offlinePrepProgress}
+                </Text>
               ) : (
-                <Text style={styles.preparingOfflineText}>Preparing offline data...</Text>
+                <Text style={styles.preparingOfflineText}>
+                  Preparing offline data...
+                </Text>
               )}
             </View>
           ) : (
@@ -544,7 +553,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
           <View style={styles.regionHeaderRow}>
             <Text style={styles.regionTitle}>Select cluster tiles:</Text>
             <TouchableOpacity
-              onPress={() => setSelectedRegionIds(offlineRegions.map((r) => r.id))}
+              onPress={() =>
+                setSelectedRegionIds(offlineRegions.map((r) => r.id))
+              }
               activeOpacity={0.8}
             >
               <Text style={styles.regionActionText}>Select all</Text>
@@ -564,12 +575,20 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
                 return (
                   <TouchableOpacity
                     key={region.id}
-                    style={[styles.regionRow, selected && styles.regionRowSelected]}
+                    style={[
+                      styles.regionRow,
+                      selected && styles.regionRowSelected,
+                    ]}
                     onPress={() => toggleRegion(region.id)}
                     activeOpacity={0.8}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.regionText, selected && styles.regionTextSelected]}>
+                      <Text
+                        style={[
+                          styles.regionText,
+                          selected && styles.regionTextSelected,
+                        ]}
+                      >
                         {region.name}
                       </Text>
                       <Text style={styles.regionSubText}>
@@ -578,7 +597,9 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
                           : "Center radius based"}
                       </Text>
                     </View>
-                    <Text style={styles.regionCheck}>{selected ? "✓" : "○"}</Text>
+                    <Text style={styles.regionCheck}>
+                      {selected ? "✓" : "○"}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -609,7 +630,6 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
             <Text style={styles.signOutText}>Sign Out</Text>
           )}
         </TouchableOpacity>
-
       </Animated.View>
     </View>
   );

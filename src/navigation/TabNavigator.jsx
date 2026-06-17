@@ -24,6 +24,7 @@ import IssueReportedMobile from "../screens/Issuereportedmobile";
 import AdvisoryMobile from "../screens/Advisorymobile";
 import HarvestingMobile from "../screens/Harvestingmobile";
 import ManagePendingUploads from "../screens/ManagePendingUploads";
+import ConversationListScreen from "../screens/Conversationlistscreen";
 const Stack = createNativeStackNavigator();
 
 const TabNavigator = ({ onLogout }) => {
@@ -68,6 +69,13 @@ const TabNavigator = ({ onLogout }) => {
         options={{
           animation: "slide_from_bottom", // feels natural for a chat overlay
         }}
+      />
+      <Stack.Screen
+        name="Conversation"
+        component={ConversationListScreen}
+        // options={{
+        //   animation: "slide_from_bottom", // feels natural for a chat overlay
+        // }}
       />
       <Stack.Screen
         name="ManagePendingUploads"
